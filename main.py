@@ -32,7 +32,11 @@ run = wandb.init(
 
 def make_env():
     # env = gym.make(config["env_name"])
-    env = MineCraftingEnv(tasks=['obtain_enchanting_table'], max_step=config['max_episode_steps'])
+    env = MineCraftingEnv(
+        tasks=['obtain_enchanting_table'],
+        tasks_can_end=[True],
+        max_step=config['max_episode_steps']
+    )
     env = Monitor(env)  # record stats such as returns
     return env
 
