@@ -128,10 +128,14 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
+# VsCode
+.vscode
 
-
+# Logs
 wandb
 videos
 runs
 logs
+
+# Trained models
 models
