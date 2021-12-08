@@ -16,10 +16,16 @@ from crafting import MineCraftingEnv
 
 from gym.envs.classic_control import CartPoleEnv
 
+
+class MyWandbCallback(WandbCallback):
+    def _on_rollout_end(self) -> None:
+        return super()._on_rollout_end()
+
+
 config = {
     "agent": "MaskablePPO",
     "policy_type": "MlpPolicy",
-    "total_timesteps": 200000,
+    "total_timesteps": 1e6,
     "env_name": "MineCrafting-v1",
     "max_episode_steps": 100,
 }
@@ -29,24 +35,31 @@ run = wandb.init(
     monitor_gym=True,  # auto-upload the videos of agents playing the game
     save_code=True,  # optional
 )
+config = wandb.config
+
 
 def make_env():
     # env = gym.make(config["env_name"])
     env = MineCraftingEnv(
-        tasks=['obtain_enchanting_table'],
+        tasks=["obtain_enchanting_table"],
         tasks_can_end=[True],
-        max_step=config['max_episode_steps']
+        max_step=config["max_episode_steps"],
     )
     env = Monitor(env)  # record stats such as returns
     return env
 
+
 env = DummyVecEnv([make_env])
-env = VecVideoRecorder(env, f"videos/{run.id}",
-    record_video_trigger=lambda step: step % 10000 == 0, video_length=200)
+env = VecVideoRecorder(
+    env,
+    f"videos/{run.id}",
+    record_video_trigger=lambda step: step % 10000 == 0,
+    video_length=200,
+)
 
 # net_arch = [dict(pi=[64, 64], vf=[64, 64])]
 # ActorCriticPolicy()
-agent = MaskablePPO(config["policy_type"], env, verbose=1)
+agent = eval(config["agent"])(config["policy_type"], env, verbose=1)
 
 agent.learn(
     total_timesteps=config["total_timesteps"],
@@ -56,7 +69,7 @@ agent.learn(
 )
 run.finish()
 
-# 
+#
 # obs = env.reset()
 # done = False
 # total_return = 0
