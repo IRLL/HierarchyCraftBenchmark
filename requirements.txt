@@ -1,3 +1,5 @@
 git+https://github.com/MathisFederico/Crafting.git#egg=crafting
 tensorboard>=2.7.0
 wandb>=0.12.4
+stable_baselines3>=1.3.0
+sb3-contrib>=1.3.0
