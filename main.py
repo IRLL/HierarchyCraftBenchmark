@@ -1,5 +1,7 @@
 import os
 import gym
+import numpy as np
+
 from stable_baselines3 import PPO
 from stable_baselines3.dqn.dqn import DQN
 from stable_baselines3.a2c.a2c import A2C
@@ -17,15 +19,24 @@ from crafting import MineCraftingEnv
 from gym.envs.classic_control import CartPoleEnv
 
 
-class MyWandbCallback(WandbCallback):
-    def _on_rollout_end(self) -> None:
-        return super()._on_rollout_end()
+class WandbCallback(WandbCallback):
+    def _on_rollout_end(self):
+        mean_reward = np.mean([ep_info["r"] for ep_info in self.model.ep_info_buffer])
+        mean_lenght = np.mean([ep_info["l"] for ep_info in self.model.ep_info_buffer])
+        current_step = self.model.num_timesteps
+        wandb.log(
+            {
+                "mean_ep_return": mean_reward,
+                "mean_ep_lenght": mean_lenght,
+            },
+            step=current_step,
+        )
 
 
 config = {
     "agent": "MaskablePPO",
     "policy_type": "MlpPolicy",
-    "total_timesteps": 1e6,
+    "total_timesteps": 2e5,
     "env_name": "MineCrafting-v1",
     "max_episode_steps": 100,
 }
@@ -33,7 +44,6 @@ run = wandb.init(
     project="minecrafting-benchmark",
     config=config,
     monitor_gym=True,  # auto-upload the videos of agents playing the game
-    save_code=True,  # optional
 )
 config = wandb.config
 
