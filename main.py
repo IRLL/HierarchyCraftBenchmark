@@ -1,12 +1,9 @@
-import os
-import gym
 import numpy as np
 
-from stable_baselines3 import PPO
+from stable_baselines3.ppo.ppo import PPO
 from stable_baselines3.dqn.dqn import DQN
 from stable_baselines3.a2c.a2c import A2C
 from stable_baselines3.common.monitor import Monitor
-from stable_baselines3.common.policies import ActorCriticPolicy
 
 from sb3_contrib.ppo_mask.ppo_mask import MaskablePPO
 
@@ -15,8 +12,6 @@ import wandb
 from wandb.integration.sb3 import WandbCallback
 
 from crafting import MineCraftingEnv
-
-from gym.envs.classic_control import CartPoleEnv
 
 
 class WandbCallback(WandbCallback):
@@ -67,8 +62,6 @@ env = VecVideoRecorder(
     video_length=200,
 )
 
-# net_arch = [dict(pi=[64, 64], vf=[64, 64])]
-# ActorCriticPolicy()
 agent = eval(config["agent"])(config["policy_type"], env, verbose=1)
 
 agent.learn(
@@ -78,17 +71,3 @@ agent.learn(
     ),
 )
 run.finish()
-
-#
-# obs = env.reset()
-# done = False
-# total_return = 0
-
-# while not done:
-#     env.render(mode='rgb_array')
-#     legal_actions = np.arange(len(env.get_action_is_legal()))[env.get_action_is_legal()]
-#     action = np.random.choice(legal_actions)
-#     obs, reward, done, _ = env.step(action)
-#     total_return += reward
-
-# print(total_return)
