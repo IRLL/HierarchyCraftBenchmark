@@ -32,6 +32,7 @@ class WandbCallback(WandbCallback):
         self.n_successes = 0
         self.n_consecutive_successes = 0
         self.max_n_consecutive_successes = max_n_consecutive_successes
+        self._tasks_done = False
 
     def _on_step(self):
         # Checking for both 'done' and 'dones' keywords because:
@@ -42,13 +43,17 @@ class WandbCallback(WandbCallback):
             if self.locals.get("done") is not None
             else self.locals.get("dones")
         )
-        if np.any(done):
-            success = all(self.training_env.unwrapped.envs[0].tasks.dones)
-            if success:
+        env_done = np.any(done)
+        tasks_done = self.locals.get("infos")[0].get("tasks_done")
+        if tasks_done:
+            self._tasks_done = True
+        if env_done:
+            if self._tasks_done:
                 self.n_successes += 1
                 self.n_consecutive_successes += 1
             else:
                 self.n_consecutive_successes = 0
+            self._tasks_done = False
             wandb.log(
                 {
                     "n_successes": self.n_successes,
@@ -120,7 +125,7 @@ if __name__ == "__main__":
         env,
         f"videos/{run.id}",
         record_video_trigger=lambda step: step % 10000 == 0,
-        video_length=200,
+        video_length=config["max_episode_steps"],
     )
 
     task: TaskObtainItem = crafting_env.tasks[0]
@@ -146,6 +151,8 @@ if __name__ == "__main__":
     # Compute complexities
     lcomp, comp_saved = learning_complexity(solving_option, used_nodes_all)
     print(f"{str(solving_option)}: {lcomp} ({comp_saved})")
+    for node in solving_option.graph.unrolled_graph.nodes():
+        print(node, node.complexity)
 
     wandb.log(
         {
