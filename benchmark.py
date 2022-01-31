@@ -131,13 +131,13 @@ if __name__ == "__main__":
     task: TaskObtainItem = crafting_env.tasks[0]
 
     # Draw requirement graph
-    fig, ax = plt.subplots(figsize=(16, 9), dpi=120)
+    fig, ax = plt.subplots(figsize=(32, 18), dpi=240)
     crafting_env.world.draw_requirements_graph(ax)
     plt.title(str(task))
     plt.savefig("requirement_graph.jpg")
 
     # Draw solving option
-    fig, ax = plt.subplots(figsize=(16, 9), dpi=120)
+    fig, ax = plt.subplots(figsize=(32, 18), dpi=240)
 
     all_options = crafting_env.world.get_all_options()
     all_options_list = list(all_options.values())
