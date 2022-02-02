@@ -1,3 +1,5 @@
+import time
+
 from crafting import CraftingEnv, MineCraftingEnv, RandomCraftingEnv
 from crafting.task import TaskObtainItem
 
@@ -16,11 +18,11 @@ from plots import save_requirement_graph, save_option_graph
 
 if __name__ == "__main__":
 
-    MINECRAFTING = True
+    MINECRAFTING = False
 
     if MINECRAFTING:
         env_name = "MineCrafting-v1"
-        task_name = "obtain_enchanting_table"
+        task_name = "obtain_book"
     else:
         env_name = "RandomCrafting-v1"
         task_name = "random_item"
@@ -83,15 +85,17 @@ if __name__ == "__main__":
     task: TaskObtainItem = crafting_env.tasks[0]
 
     # Get & save requirements graph
+    timestamp = time.strftime("%Y%m%d_%H%M%S")
+    run_dirname = f"{timestamp}-{run.id}"
     requirement_graph_path = save_requirement_graph(
-        run.id, crafting_env.world, title=str(task), figsize=(32, 18)
+        run_dirname, crafting_env.world, title=str(task), figsize=(32, 18)
     )
 
     # Get & save solving option
     all_options = crafting_env.world.get_all_options()
     all_options_list = list(all_options.values())
     solving_option: Option = all_options[f"Get {task.goal_item}"]
-    solving_option_graph_path = save_option_graph(solving_option, run.id)
+    solving_option_graph_path = save_option_graph(solving_option, run_dirname)
 
     # Compute complexities
     used_nodes_all = nodes_histograms(all_options_list)
