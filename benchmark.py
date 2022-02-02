@@ -1,4 +1,4 @@
-from crafting import CraftingEnv, RandomCraftingEnv
+from crafting import CraftingEnv, MineCraftingEnv, RandomCraftingEnv
 from crafting.task import TaskObtainItem
 
 from option_graph.metrics.complexity import learning_complexity
@@ -15,22 +15,31 @@ from callbacks import WandbCallback
 from plots import save_requirement_graph, save_option_graph
 
 if __name__ == "__main__":
+
+    MINECRAFTING = True
+
+    if MINECRAFTING:
+        env_name = "MineCrafting-v1"
+        task_name = "obtain_enchanting_table"
+    else:
+        env_name = "RandomCrafting-v1"
+        task_name = "random_item"
+
     config = {
         "agent": "MaskablePPO",
         "policy_type": "MlpPolicy",
         "total_timesteps": 2e5,
         "max_n_consecutive_successes": 100,
-        "env_name": "RandomCrafting-v1",
+        "env_name": env_name,
         "max_episode_steps": 50,
         "n_items": 50,
         "n_tools": 0,
         "n_foundables": 5,
         "n_zones": 1,
-        "task": "random_item",
+        "task": task_name,
     }
 
     def make_env():
-        # env = gym.make(config["env_name"])
         if config["env_name"] == "RandomCrafting-v1":
             env = RandomCraftingEnv(
                 n_items=config["n_items"],
@@ -43,16 +52,23 @@ if __name__ == "__main__":
                 tasks_can_end=[True],
                 max_step=config["max_episode_steps"],
             )
+        elif config["env_name"] == "MineCrafting-v1":
+            env = MineCraftingEnv(
+                tasks=[config["task"]],
+                tasks_can_end=[True],
+                max_step=config["max_episode_steps"],
+            )
         else:
             raise ValueError
         env = Monitor(env)  # record stats such as returns
         return env
 
-    run = wandb.init(
-        project="crafting-benchmark",
-        config=config,
-        monitor_gym=True,  # auto-upload the videos of agents playing the game
-    )
+    if config["env_name"] == "RandomCrafting-v1":
+        project = "crafting-benchmark"
+    elif config["env_name"] == "MineCrafting-v1":
+        project = "minecrafting-benchmark"
+
+    run = wandb.init(project=project, config=config, monitor_gym=True)
     config = wandb.config
 
     env = DummyVecEnv([make_env])
