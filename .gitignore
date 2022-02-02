@@ -136,6 +136,7 @@ wandb
 videos
 runs
 logs
+images
 
 # Trained models
 models
