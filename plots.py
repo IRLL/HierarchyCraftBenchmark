@@ -49,9 +49,7 @@ def save_option_graph(
 
     compute_levels(graph)
     width = max(len(nodes) for nodes in graph.graph["nodes_by_level"].values())
-    height = 1 + max(graph.graph["nodes_by_level"].keys())
-
-    _, ax = plt.subplots(figsize=(max(8, 16 * width / 8), max(4.5, 16 * height / 8)))
+    _, ax = plt.subplots(figsize=(max(8, 16 * width / 8), max(4.5, 9 * width / 8)))
     graph.draw(ax, draw_options_hulls=True)
 
     return save_plot("solving_option.jpg", name, str(option), dpi)
