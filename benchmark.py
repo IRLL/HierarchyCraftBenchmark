@@ -18,14 +18,14 @@ from plots import save_requirement_graph, save_option_graph
 
 if __name__ == "__main__":
 
-    MINECRAFTING = False
+    MINECRAFTING = True
 
     if MINECRAFTING:
         env_name = "MineCrafting-v1"
         task_name = "obtain_book"
     else:
         env_name = "RandomCrafting-v1"
-        task_name = "random_item"
+        task_name = "obtain_random_item"
 
     config = {
         "agent": "MaskablePPO",
@@ -71,6 +71,8 @@ if __name__ == "__main__":
         project = "minecrafting-benchmark"
 
     run = wandb.init(project=project, config=config, monitor_gym=True)
+    timestamp = time.strftime("%Y%m%d_%H%M%S")
+    run_dirname = f"{timestamp}-{run.id}"
     config = wandb.config
 
     env = DummyVecEnv([make_env])
@@ -85,10 +87,8 @@ if __name__ == "__main__":
     task: TaskObtainItem = crafting_env.tasks[0]
 
     # Get & save requirements graph
-    timestamp = time.strftime("%Y%m%d_%H%M%S")
-    run_dirname = f"{timestamp}-{run.id}"
     requirement_graph_path = save_requirement_graph(
-        run_dirname, crafting_env.world, title=str(task), figsize=(32, 18)
+        run_dirname, crafting_env.world, title=str(crafting_env.world), figsize=(32, 18)
     )
 
     # Get & save solving option
