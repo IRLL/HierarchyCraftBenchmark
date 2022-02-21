@@ -18,7 +18,7 @@ from plots import save_requirement_graph, save_option_graph
 
 if __name__ == "__main__":
 
-    MINECRAFTING = True
+    MINECRAFTING = False
 
     if MINECRAFTING:
         env_name = "MineCrafting-v1"
