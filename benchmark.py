@@ -1,4 +1,5 @@
 import time
+import matplotlib.pyplot as plt
 
 from crafting import CraftingEnv, MineCraftingEnv, RandomCraftingEnv
 from crafting.task import TaskObtainItem
@@ -87,38 +88,51 @@ if __name__ == "__main__":
     task: TaskObtainItem = crafting_env.tasks[0]
 
     # Get & save requirements graph
-    requirement_graph_path = save_requirement_graph(
-        run_dirname, crafting_env.world, title=str(crafting_env.world), figsize=(32, 18)
-    )
+    # requirement_graph_path = save_requirement_graph(
+    #     run_dirname, crafting_env.world, title=str(crafting_env.world), figsize=(32, 18)
+    # )
 
     # Get & save solving option
     all_options = crafting_env.world.get_all_options()
     all_options_list = list(all_options.values())
     solving_option: Option = all_options[f"Get {task.goal_item}"]
-    solving_option_graph_path = save_option_graph(solving_option, run_dirname)
-
-    # Compute complexities
-    used_nodes_all = nodes_histograms(all_options_list)
-    lcomp, comp_saved = learning_complexity(solving_option, used_nodes_all)
-    print(f"OPTION: {str(solving_option)}: {lcomp:.2f} ({comp_saved:.2f})")
-
-    wandb.log(
-        {
-            "task": str(task),
-            "solving_option": str(solving_option),
-            "learning_complexity": lcomp,
-            "total_complexity": lcomp + comp_saved,
-            "saved_complexity": comp_saved,
-            "requirement_graph": wandb.Image(requirement_graph_path),
-            "solving_option": wandb.Image(solving_option_graph_path),
-        }
+    solving_option_graph_path = save_option_graph(
+        solving_option, run_dirname, unrolled=True
     )
+    # for option_name, option in all_options.items():
+    #     if len(list(option.graph.nodes())) > 1:
+    #         _, ax = plt.subplots()
+    #         option.graph.draw(ax)
+    #         plt.title(option_name)
+    #         plt.show()
 
-    agent = MaskablePPO(config["policy_type"], env, verbose=1)
-    agent.learn(
-        total_timesteps=config["total_timesteps"],
-        callback=WandbCallback(
-            verbose=2, max_n_consecutive_successes=config["max_n_consecutive_successes"]
-        ),
-    )
-    run.finish()
+    #         _, ax = plt.subplots(figsize=(32, 18))
+    #         option.graph.unrolled_graph.draw(ax)
+    #         plt.title(option_name)
+    #         plt.show()
+
+    #         # Compute complexities
+    #         used_nodes_all = nodes_histograms(all_options_list)
+    #         lcomp, comp_saved = learning_complexity(option, used_nodes_all)
+    #         print(f"OPTION: {option_name}: {lcomp:.2f} ({comp_saved:.2f})")
+
+    # wandb.log(
+    #     {
+    #         "task": str(task),
+    #         "solving_option": str(solving_option),
+    #         "learning_complexity": lcomp,
+    #         "total_complexity": lcomp + comp_saved,
+    #         "saved_complexity": comp_saved,
+    #         "requirement_graph": wandb.Image(requirement_graph_path),
+    #         "solving_option": wandb.Image(solving_option_graph_path),
+    #     }
+    # )
+
+    # agent = MaskablePPO(config["policy_type"], env, verbose=1)
+    # agent.learn(
+    #     total_timesteps=config["total_timesteps"],
+    #     callback=WandbCallback(
+    #         verbose=2, max_n_consecutive_successes=config["max_n_consecutive_successes"]
+    #     ),
+    # )
+    # run.finish()
