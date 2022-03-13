@@ -1,7 +1,7 @@
 import time
 
 from crafting import CraftingEnv, MineCraftingEnv, RandomCraftingEnv
-from crafting.task import TaskObtainItem
+from crafting.task import RewardShaping, TaskObtainItem, get_task_from_name
 
 from option_graph.metrics.complexity import learning_complexity
 from option_graph.metrics.complexity.histograms import nodes_histograms
@@ -33,9 +33,11 @@ if __name__ == "__main__":
         "total_timesteps": 2e5,
         "max_n_consecutive_successes": 100,
         "env_name": env_name,
-        "env_seed": 42,
+        "env_seed": 1,
+        "task_seed": 2,
+        "reward_shaping": RewardShaping.NONE,
         "max_episode_steps": 50,
-        "n_items": 50,
+        "n_items": 20,
         "n_tools": 0,
         "n_foundables": 5,
         "n_zones": 1,
@@ -51,20 +53,23 @@ if __name__ == "__main__":
                 n_required_tools=[0.25, 0.4, 0.2, 0.1, 0.05],
                 n_inputs_per_craft=[0.1, 0.6, 0.3],
                 n_zones=config["n_zones"],
-                tasks=[config["task"]],
-                tasks_can_end=[True],
                 max_step=config["max_episode_steps"],
                 seed=config["env_seed"],
             )
         elif config["env_name"] == "MineCrafting-v1":
             env = MineCraftingEnv(
-                tasks=[config["task"]],
-                tasks_can_end=[True],
                 max_step=config["max_episode_steps"],
                 seed=config["env_seed"],
             )
         else:
             raise ValueError
+        task = get_task_from_name(
+            config["task"],
+            world=env.world,
+            reward_shaping=config["reward_shaping"],
+            seed=config["task_seed"],
+        )
+        env.add_task(task, can_end=True)
         env = Monitor(env)  # record stats such as returns
         return env
 
