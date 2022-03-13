@@ -33,6 +33,7 @@ if __name__ == "__main__":
         "total_timesteps": 2e5,
         "max_n_consecutive_successes": 100,
         "env_name": env_name,
+        "env_seed": 42,
         "max_episode_steps": 50,
         "n_items": 50,
         "n_tools": 0,
@@ -53,12 +54,14 @@ if __name__ == "__main__":
                 tasks=[config["task"]],
                 tasks_can_end=[True],
                 max_step=config["max_episode_steps"],
+                seed=config["env_seed"],
             )
         elif config["env_name"] == "MineCrafting-v1":
             env = MineCraftingEnv(
                 tasks=[config["task"]],
                 tasks_can_end=[True],
                 max_step=config["max_episode_steps"],
+                seed=config["env_seed"],
             )
         else:
             raise ValueError
