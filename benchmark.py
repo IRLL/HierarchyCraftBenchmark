@@ -30,7 +30,7 @@ if __name__ == "__main__":
     config = {
         "agent": "MaskablePPO",
         "policy_type": "MlpPolicy",
-        "total_timesteps": 2e5,
+        "total_timesteps": 1e6,
         "max_n_consecutive_successes": 100,
         "env_name": env_name,
         "env_seed": 1,
