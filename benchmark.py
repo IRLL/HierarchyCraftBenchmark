@@ -30,12 +30,12 @@ if __name__ == "__main__":
     config = {
         "agent": "MaskablePPO",
         "policy_type": "MlpPolicy",
-        "total_timesteps": 1e6,
-        "max_n_consecutive_successes": 100,
+        "total_timesteps": 3e5,
+        "max_n_consecutive_successes": 1000,
         "env_name": env_name,
         "env_seed": 1,
         "task_seed": 1,
-        "reward_shaping": RewardShaping.ALL_USEFUL.value,
+        "reward_shaping": RewardShaping.ALL.value,
         "max_episode_steps": 50,
         "n_items": 40,
         "n_tools": 0,
@@ -111,7 +111,7 @@ if __name__ == "__main__":
     # Compute complexities
     used_nodes_all = nodes_histograms(all_options_list)
     lcomp, comp_saved = learning_complexity(solving_option, used_nodes_all)
-    print(f"OPTION: {str(solving_option)}: {lcomp:.2f} ({comp_saved:.2f})")
+    print(f"OPTION: {str(solving_option)}: {lcomp} ({comp_saved})")
 
     wandb.log(
         {
@@ -132,4 +132,5 @@ if __name__ == "__main__":
             verbose=2, max_n_consecutive_successes=config["max_n_consecutive_successes"]
         ),
     )
+
     run.finish()
