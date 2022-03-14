@@ -34,15 +34,25 @@ if __name__ == "__main__":
         "max_n_consecutive_successes": 100,
         "env_name": env_name,
         "env_seed": 1,
-        "task_seed": 2,
-        "reward_shaping": RewardShaping.NONE,
+        "task_seed": 1,
+        "reward_shaping": RewardShaping.ALL_USEFUL.value,
         "max_episode_steps": 50,
-        "n_items": 20,
+        "n_items": 40,
         "n_tools": 0,
         "n_foundables": 5,
         "n_zones": 1,
         "task": task_name,
     }
+
+    if config["env_name"] == "RandomCrafting-v1":
+        project = "crafting-benchmark"
+    elif config["env_name"] == "MineCrafting-v1":
+        project = "minecrafting-benchmark"
+
+    run = wandb.init(project=project, config=config, monitor_gym=True)
+    timestamp = time.strftime("%Y%m%d_%H%M%S")
+    run_dirname = f"{timestamp}-{run.id}"
+    config = wandb.config
 
     def make_env():
         if config["env_name"] == "RandomCrafting-v1":
@@ -63,25 +73,18 @@ if __name__ == "__main__":
             )
         else:
             raise ValueError
+
+        reward_shaping = RewardShaping(config["reward_shaping"])
         task = get_task_from_name(
             config["task"],
             world=env.world,
-            reward_shaping=config["reward_shaping"],
+            reward_shaping=reward_shaping,
             seed=config["task_seed"],
         )
+        print(f"{task=} | {reward_shaping=}")
         env.add_task(task, can_end=True)
         env = Monitor(env)  # record stats such as returns
         return env
-
-    if config["env_name"] == "RandomCrafting-v1":
-        project = "crafting-benchmark"
-    elif config["env_name"] == "MineCrafting-v1":
-        project = "minecrafting-benchmark"
-
-    run = wandb.init(project=project, config=config, monitor_gym=True)
-    timestamp = time.strftime("%Y%m%d_%H%M%S")
-    run_dirname = f"{timestamp}-{run.id}"
-    config = wandb.config
 
     env = DummyVecEnv([make_env])
     crafting_env: CraftingEnv = env.envs[0]
