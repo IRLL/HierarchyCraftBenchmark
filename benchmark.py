@@ -1,5 +1,4 @@
 import time
-
 from crafting import CraftingEnv, MineCraftingEnv, RandomCraftingEnv
 from crafting.task import RewardShaping, TaskObtainItem, get_task_from_name
 
@@ -31,13 +30,13 @@ if __name__ == "__main__":
         "agent": "MaskablePPO",
         "policy_type": "MlpPolicy",
         "total_timesteps": 3e5,
-        "max_n_consecutive_successes": 1000,
+        "max_n_consecutive_successes": 100,
         "env_name": env_name,
         "env_seed": 1,
         "task_seed": 1,
-        "reward_shaping": RewardShaping.ALL.value,
+        "reward_shaping": RewardShaping.ALL_USEFUL.value,
         "max_episode_steps": 50,
-        "n_items": 40,
+        "n_items": 50,
         "n_tools": 0,
         "n_foundables": 5,
         "n_zones": 1,

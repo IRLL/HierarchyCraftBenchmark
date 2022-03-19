@@ -1,5 +1,6 @@
-from typing import Tuple
 import os
+import sys
+from typing import Tuple
 
 import matplotlib.pyplot as plt
 
@@ -47,6 +48,7 @@ def save_option_graph(
     if unrolled:
         graph = graph.unrolled_graph
 
+    print("Graph size:", sys.getsizeof(graph))
     compute_levels(graph)
     width = max(len(nodes) for nodes in graph.graph["nodes_by_level"].values())
     _, ax = plt.subplots(figsize=(max(8, 16 * width / 8), max(4.5, 9 * width / 8)))
