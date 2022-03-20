@@ -8,6 +8,8 @@ from option_graph.option import Option
 
 from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.vec_env import DummyVecEnv, VecVideoRecorder
+
+from sb3_contrib.common.maskable.policies import MaskableActorCriticPolicy
 from sb3_contrib.ppo_mask.ppo_mask import MaskablePPO
 
 import wandb
@@ -28,7 +30,12 @@ if __name__ == "__main__":
 
     config = {
         "agent": "MaskablePPO",
+        "agent_seed": 0,
         "policy_type": "MlpPolicy",
+        "pi_n_layers": 3,
+        "pi_units_per_layer": 64,
+        "vf_n_layers": 3,
+        "vf_units_per_layer": 64,
         "total_timesteps": 3e5,
         "max_n_consecutive_successes": 100,
         "env_name": env_name,
@@ -112,6 +119,20 @@ if __name__ == "__main__":
     lcomp, comp_saved = learning_complexity(solving_option, used_nodes_all)
     print(f"OPTION: {str(solving_option)}: {lcomp} ({comp_saved})")
 
+    def count_parameters(model: MaskableActorCriticPolicy):
+        return sum(p.numel() for p in model.parameters() if p.requires_grad)
+
+    pi_arch = [config[f"pi_units_per_layer"] for _ in range(config["pi_n_layers"])]
+    vf_arch = [config[f"vf_units_per_layer"] for _ in range(config["vf_n_layers"])]
+    net_arch = [dict(pi=pi_arch, vf=vf_arch)]
+    agent = MaskablePPO(
+        config["policy_type"],
+        env,
+        policy_kwargs={"net_arch": net_arch},
+        seed=config["agent_seed"],
+        verbose=1,
+    )
+
     wandb.log(
         {
             "task": str(task),
@@ -121,14 +142,15 @@ if __name__ == "__main__":
             "saved_complexity": comp_saved,
             "requirement_graph": wandb.Image(requirement_graph_path),
             "solving_option": wandb.Image(solving_option_graph_path),
+            "trainable_parameters": count_parameters(agent.policy),
         }
     )
 
-    agent = MaskablePPO(config["policy_type"], env, verbose=1)
     agent.learn(
         total_timesteps=config["total_timesteps"],
         callback=WandbCallback(
-            verbose=2, max_n_consecutive_successes=config["max_n_consecutive_successes"]
+            verbose=2,
+            max_n_consecutive_successes=config["max_n_consecutive_successes"],
         ),
     )
 
