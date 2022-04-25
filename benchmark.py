@@ -36,7 +36,7 @@ if __name__ == "__main__":
         "pi_units_per_layer": 64,
         "vf_n_layers": 3,
         "vf_units_per_layer": 64,
-        "total_timesteps": 3e5,
+        "total_timesteps": 1e6,
         "max_n_consecutive_successes": 100,
         "env_name": env_name,
         "env_seed": 1,
