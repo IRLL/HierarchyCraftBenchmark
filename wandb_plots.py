@@ -18,8 +18,8 @@ def get_mean_and_uncertainty_by_groups(df: pd.DataFrame, groups: List[str]):
 
 def plot_regression(df: pd.DataFrame, ax: plt.Axes, deg=1):
     experiment_settings = ["env_seed", "task_seed"]
-    success_df = df[df["n_consecutive_successes"] >= 100]
-    fail_df = df[df["n_consecutive_successes"] < 100]
+    success_df = df[df["n_consecutive_successes"] > 0]
+    fail_df = df[df["n_consecutive_successes"] == 0]
 
     mean_succ_df, uncertainty_succ_df = get_mean_and_uncertainty_by_groups(
         success_df, experiment_settings
@@ -45,6 +45,7 @@ def plot_regression(df: pd.DataFrame, ax: plt.Axes, deg=1):
         step,
         yerr=uncertainty_succ_df["_step"],
         color="b",
+        label="Success",
         **errorbar_config,
     )
 
@@ -55,17 +56,25 @@ def plot_regression(df: pd.DataFrame, ax: plt.Axes, deg=1):
         stepfail,
         yerr=uncertainty_fail_df["_step"],
         color="r",
+        label="Fail (step limit)",
         **errorbar_config,
     )
-    tcompreg = Polynomial([0]).fit(np.log(tcomp), np.log(step), deg=deg)
+    reg = Polynomial([0]).fit(np.log(tcomp), np.log(step), deg=deg)
 
-    x_reg, y_reg = tcompreg.linspace(
-        100, domain=[np.min(np.log(tcomp)), np.max(np.log(tcompfail))]
+    x_reg, y_reg = reg.linspace(
+        100, domain=[np.min(np.log(tcomp)), np.max(np.log(15000))]
     )
-    ax.plot(np.exp(x_reg), np.exp(y_reg), color="r")
+    ax.plot(
+        np.exp(x_reg),
+        np.exp(y_reg),
+        color="g",
+        label=f"Polyfit: {np.array_str(reg.coef, precision=3, suppress_small=True)}",
+    )
     ax.loglog()
-    # ax.legend()
-    return tcompreg
+    ax.set_ylim([np.min(step), 1.1e6])
+    ax.set_xlim([np.min(tcomp), 15000])
+    ax.legend(loc="upper left", fontsize=5)
+    return reg
 
 
 if __name__ == "__main__":
