@@ -1,0 +1,158 @@
+from typing import List
+import pandas as pd
+
+import numpy as np
+from numpy.polynomial.polynomial import Polynomial
+
+import matplotlib.pyplot as plt
+import matplotlib.ticker as mticker
+
+
+def get_mean_and_uncertainty_by_groups(df: pd.DataFrame, groups: List[str]):
+    mean_df = df.groupby(groups).mean()
+    std_df = df.groupby(groups).std()
+    std_df.fillna(0.0, inplace=True)
+    count_df = df.groupby(groups).count()
+    uncertainty_df = 2 * std_df / np.sqrt(count_df)
+    return mean_df, uncertainty_df
+
+
+def plot_regression(df: pd.DataFrame, ax: plt.Axes):
+    experiment_settings = ["env_seed", "task_seed"]
+    success_df = df[df["n_consecutive_successes"] >= 100]
+    fail_df = df[df["n_consecutive_successes"] < 100]
+
+    mean_succ_df, uncertainty_succ_df = get_mean_and_uncertainty_by_groups(
+        success_df, experiment_settings
+    )
+
+    mean_fail_df, uncertainty_fail_df = get_mean_and_uncertainty_by_groups(
+        fail_df, experiment_settings
+    )
+
+    errorbar_config = {
+        "marker": "x",
+        "markersize": 2,
+        "linestyle": "",
+        "capsize": 2,
+        "elinewidth": 1,
+    }
+
+    step = mean_succ_df["_step"]
+    tcomp = mean_succ_df["total_complexity"]
+
+    ax.errorbar(
+        tcomp,
+        step,
+        yerr=uncertainty_succ_df["_step"],
+        color="b",
+        **errorbar_config,
+    )
+
+    stepfail = mean_fail_df["_step"]
+    tcompfail = mean_fail_df["total_complexity"]
+    ax.errorbar(
+        tcompfail,
+        stepfail,
+        yerr=uncertainty_fail_df["_step"],
+        color="r",
+        **errorbar_config,
+    )
+    tcompreg = Polynomial([0]).fit(np.log(tcomp), np.log(step), deg=2)
+
+    x_reg, y_reg = tcompreg.linspace(
+        100, domain=[np.min(np.log(tcomp)), np.max(np.log(tcompfail))]
+    )
+    ax.plot(np.exp(x_reg), np.exp(y_reg), color="r")
+    ax.loglog()
+    # ax.legend()
+    return tcompreg
+
+
+if __name__ == "__main__":
+    experiments_df = pd.read_csv("project.csv")
+
+    # Filter crashed, failed, killed and running runs
+    experiments_df = experiments_df[experiments_df["state"] == "finished"]
+
+    # Replace invalid task_seed
+    experiments_df["task_seed"].mask(
+        experiments_df["task_seed"] == "[0]", 0, inplace=True
+    )
+
+    # Gather grid values
+    pi_units_per_layer_values = pd.unique(experiments_df["pi_units_per_layer"])
+    pi_units_per_layer_values.sort()
+
+    vf_units_per_layer_values = pd.unique(experiments_df["vf_units_per_layer"])
+    vf_units_per_layer_values.sort()
+
+    # Prepare subplots
+    fig, axes = plt.subplots(
+        len(pi_units_per_layer_values),
+        len(vf_units_per_layer_values),
+        squeeze=True,
+        sharex=True,
+        sharey=True,
+    )
+
+    slopes = np.zeros_like(axes)
+    for i, pi_units in enumerate(pi_units_per_layer_values):
+        for j, vf_units in enumerate(vf_units_per_layer_values):
+            filtered_df = experiments_df[
+                (experiments_df["vf_units_per_layer"] == vf_units)
+                & (experiments_df["pi_units_per_layer"] == pi_units)
+            ]
+            ax = axes[i, j]
+            reg = plot_regression(filtered_df, ax=ax)
+
+            print(
+                f"pi={pi_units}, vf={vf_units}: "
+                f"{np.array_str(reg.coef, precision=3, suppress_small=True)}"
+            )
+            slopes[i, j] = reg.coef[1]
+            # axes[i, j].set_suptitle(f"{reg.slope} {reg.rvalue}")
+            labelright = False
+            if i == 0:
+                ax.set_title(vf_units)
+            if j == 0:
+                ax.set_ylabel(pi_units)
+            if j == len(vf_units_per_layer_values) - 1:
+                labelright = True
+            ax.tick_params(
+                axis="y",
+                which="both",
+                labelleft=False,
+                left=False,
+                right=labelright,
+                labelright=labelright,
+                direction="out",
+            )
+            # axes[i, j].setTitle(f"pi-{pi_units} vf-{vf_units}")
+
+    fig.suptitle(
+        "Correlation between steps to convergence and total complexity for multiple network sizes",
+        fontsize=16,
+    )
+    fig.text(s="Units per layer in value network", x=0.5, y=1 - 0.04, ha="center")
+    fig.supylabel("Units per layer in policy network")
+
+    fig.supxlabel("Steps")
+    fig.text(s="Total complexity", x=1 - 0.02, y=0.5, rotation=270, ha="center")
+    plt.show()
+
+    fig = plt.figure()
+    X, Y = np.meshgrid(pi_units_per_layer_values, vf_units_per_layer_values)
+
+    ax = fig.add_subplot(projection="3d")
+    ax.plot_surface(np.log2(X), np.log2(Y), slopes, cmap="winter")
+    ax.xaxis.set_major_formatter(
+        mticker.FuncFormatter(lambda val, pos=None: f"{np.power(2, val):.0f}")
+    )
+    ax.yaxis.set_major_formatter(
+        mticker.FuncFormatter(lambda val, pos=None: f"{np.power(2, val):.0f}")
+    )
+
+    # ax.set_yscale("log", base=2)
+    # ax.set_xscale("log", base=2)
+    plt.show()
