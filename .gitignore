@@ -141,3 +141,6 @@ images
 
 # Trained models
 models
+
+# Data
+*.csv
