@@ -2,10 +2,9 @@ from typing import List
 import pandas as pd
 
 import numpy as np
-from numpy.polynomial.polynomial import Polynomial
+from numpy.polynomial import Polynomial
 
 import matplotlib.pyplot as plt
-import matplotlib.ticker as mticker
 
 
 def get_mean_and_uncertainty_by_groups(df: pd.DataFrame, groups: List[str]):
@@ -17,7 +16,7 @@ def get_mean_and_uncertainty_by_groups(df: pd.DataFrame, groups: List[str]):
     return mean_df, uncertainty_df
 
 
-def plot_regression(df: pd.DataFrame, ax: plt.Axes):
+def plot_regression(df: pd.DataFrame, ax: plt.Axes, deg=1):
     experiment_settings = ["env_seed", "task_seed"]
     success_df = df[df["n_consecutive_successes"] >= 100]
     fail_df = df[df["n_consecutive_successes"] < 100]
@@ -58,7 +57,7 @@ def plot_regression(df: pd.DataFrame, ax: plt.Axes):
         color="r",
         **errorbar_config,
     )
-    tcompreg = Polynomial([0]).fit(np.log(tcomp), np.log(step), deg=2)
+    tcompreg = Polynomial([0]).fit(np.log(tcomp), np.log(step), deg=deg)
 
     x_reg, y_reg = tcompreg.linspace(
         100, domain=[np.min(np.log(tcomp)), np.max(np.log(tcompfail))]
@@ -91,12 +90,12 @@ if __name__ == "__main__":
     fig, axes = plt.subplots(
         len(pi_units_per_layer_values),
         len(vf_units_per_layer_values),
-        squeeze=True,
         sharex=True,
         sharey=True,
     )
 
-    slopes = np.zeros_like(axes)
+    deg = 2
+    coefs = np.zeros(axes.shape + (deg + 1,))
     for i, pi_units in enumerate(pi_units_per_layer_values):
         for j, vf_units in enumerate(vf_units_per_layer_values):
             filtered_df = experiments_df[
@@ -104,13 +103,13 @@ if __name__ == "__main__":
                 & (experiments_df["pi_units_per_layer"] == pi_units)
             ]
             ax = axes[i, j]
-            reg = plot_regression(filtered_df, ax=ax)
+            reg = plot_regression(filtered_df, deg=deg, ax=ax)
 
             print(
                 f"pi={pi_units}, vf={vf_units}: "
                 f"{np.array_str(reg.coef, precision=3, suppress_small=True)}"
             )
-            slopes[i, j] = reg.coef[1]
+            coefs[i, j, :] = np.array(reg.coef)
             # axes[i, j].set_suptitle(f"{reg.slope} {reg.rvalue}")
             labelright = False
             if i == 0:
@@ -134,25 +133,49 @@ if __name__ == "__main__":
         "Correlation between steps to convergence and total complexity for multiple network sizes",
         fontsize=16,
     )
-    fig.text(s="Units per layer in value network", x=0.5, y=1 - 0.04, ha="center")
-    fig.supylabel("Units per layer in policy network")
+    fig.text(s="Units per layer in value network", x=0.5, y=1 - 0.08, ha="center")
+    fig.supylabel("Units per layer in policy network", x=0.08)
 
-    fig.supxlabel("Steps")
-    fig.text(s="Total complexity", x=1 - 0.02, y=0.5, rotation=270, ha="center")
+    fig.supxlabel("Steps", y=0.04)
+    fig.text(s="Total complexity", x=1 - 0.04, y=0.5, rotation=270, va="center")
     plt.show()
 
-    fig = plt.figure()
+    fig, axes = plt.subplots(1, deg + 1, sharey=True)
     X, Y = np.meshgrid(pi_units_per_layer_values, vf_units_per_layer_values)
 
-    ax = fig.add_subplot(projection="3d")
-    ax.plot_surface(np.log2(X), np.log2(Y), slopes, cmap="winter")
-    ax.xaxis.set_major_formatter(
-        mticker.FuncFormatter(lambda val, pos=None: f"{np.power(2, val):.0f}")
-    )
-    ax.yaxis.set_major_formatter(
-        mticker.FuncFormatter(lambda val, pos=None: f"{np.power(2, val):.0f}")
-    )
+    for degree in range(deg + 1):
+        ax = axes[degree]
+        coefs_deg = coefs[:, :, degree]
+        im = ax.imshow(coefs_deg, cmap="copper")
 
-    # ax.set_yscale("log", base=2)
-    # ax.set_xscale("log", base=2)
+        # Show all ticks and label them with the respective list entries
+        ax.set_xlabel("Units per layer in policy network")
+        ax.set_xticks(
+            np.arange(len(pi_units_per_layer_values)),
+            labels=pi_units_per_layer_values,
+        )
+
+        if degree == 0:
+            ax.set_ylabel("Units per layer in value network")
+            ax.set_yticks(
+                np.arange(len(vf_units_per_layer_values)),
+                labels=vf_units_per_layer_values,
+            )
+
+        # Loop over data dimensions and create text annotations.
+        for i in range(len(pi_units_per_layer_values)):
+            for j in range(len(vf_units_per_layer_values)):
+                text = ax.text(
+                    j,
+                    i,
+                    f"{coefs_deg[i, j]:.2f}",
+                    ha="center",
+                    va="center",
+                    color="w",
+                    fontsize=9,
+                )
+
+        ax.set_title(f"Degree {degree}")
+
+    fig.suptitle("Polynomial fit coefficients for different network sizes")
     plt.show()
