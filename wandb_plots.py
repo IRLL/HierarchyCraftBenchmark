@@ -18,8 +18,10 @@ def get_mean_and_uncertainty_by_groups(df: pd.DataFrame, groups: List[str]):
 
 def plot_regression(df: pd.DataFrame, ax: plt.Axes, deg=1):
     experiment_settings = ["env_seed", "task_seed"]
-    success_df = df[df["n_consecutive_successes"] > 0]
-    fail_df = df[df["n_consecutive_successes"] == 0]
+    criterion = "success100_step"
+
+    success_df = df[~df[criterion].isna()]
+    fail_df = df[df[criterion].isna()]
 
     mean_succ_df, uncertainty_succ_df = get_mean_and_uncertainty_by_groups(
         success_df, experiment_settings
@@ -37,13 +39,13 @@ def plot_regression(df: pd.DataFrame, ax: plt.Axes, deg=1):
         "elinewidth": 1,
     }
 
-    step = mean_succ_df["_step"]
+    step = mean_succ_df[criterion]
     tcomp = mean_succ_df["total_complexity"]
 
     ax.errorbar(
         tcomp,
         step,
-        yerr=uncertainty_succ_df["_step"],
+        yerr=uncertainty_succ_df[criterion],
         color="b",
         label="Success",
         **errorbar_config,
@@ -79,9 +81,6 @@ def plot_regression(df: pd.DataFrame, ax: plt.Axes, deg=1):
 
 if __name__ == "__main__":
     experiments_df = pd.read_csv("project.csv")
-
-    # Filter crashed, failed, killed and running runs
-    experiments_df = experiments_df[experiments_df["state"] == "finished"]
 
     # Replace invalid task_seed
     experiments_df["task_seed"].mask(
