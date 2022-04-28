@@ -30,13 +30,13 @@ def add_to_dict_of_lists(dictionary: Dict[Any, list], new_dict: Dict[Any, list])
 
 
 if __name__ == "__main__":
-    api = wandb.Api()
+    api = wandb.Api(timeout=60)
     entity, project = "mathisfederico", "crafting-benchmark"
     runs = api.runs(entity + "/" + project)
 
     summary_dict, config_dict = {}, {}
     name_list, sweep_list = [], []
-    succ100_step_list, csucc100_step_list, csucc50_step_list = [], [], []
+    succ100_step_list, csucc90_step_list, csucc50_step_list = [], [], []
 
     loader = tqdm(runs, total=len(runs))
     for run in loader:
@@ -67,13 +67,13 @@ if __name__ == "__main__":
             csucc50_step = hist_df[hist_df["n_consecutive_successes"] >= 50][
                 "_step"
             ].min()
-            csucc100_step = hist_df[hist_df["n_consecutive_successes"] >= 100][
+            csucc90_step = hist_df[hist_df["n_consecutive_successes"] >= 90][
                 "_step"
             ].min()
 
             succ100_step_list.append(succ100_step)
             csucc50_step_list.append(csucc50_step)
-            csucc100_step_list.append(csucc100_step)
+            csucc90_step_list.append(csucc90_step)
 
             tcomp = run.summary._json_dict["total_complexity"]
             scomp = run.summary._json_dict["saved_complexity"]
@@ -81,7 +81,7 @@ if __name__ == "__main__":
             vf_units = run.config["vf_units_per_layer"]
             loader.set_description(
                 f"{run.name: <25} | {tcomp}({scomp}) | pi={pi_units: <4}, vf={vf_units: <4} | "
-                f"{succ100_step} {csucc50_step} {csucc100_step}"
+                f"{succ100_step} {csucc50_step} {csucc90_step}"
             )
 
     runs_df = pd.DataFrame(
@@ -89,7 +89,7 @@ if __name__ == "__main__":
             "name": name_list,
             "sweep": sweep_list,
             "success100_step": succ100_step_list,
-            "csuccess100_step": csucc100_step_list,
+            "csuccess90_step": csucc90_step_list,
             "csuccess50_step": csucc50_step_list,
             **summary_dict,
             **config_dict,
