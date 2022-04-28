@@ -35,17 +35,22 @@ if __name__ == "__main__":
     runs = api.runs(entity + "/" + project)
 
     summary_dict, config_dict = {}, {}
-    name_list, sweep_list, state_list = [], [], []
+    name_list, sweep_list = [], []
+    succ100_step_list, csucc100_step_list, csucc50_step_list = [], [], []
 
     loader = tqdm(runs, total=len(runs))
     for run in loader:
-        if run.sweep is not None and run.sweep.name in (
-            "ch1poicp",
-            "gdopl9qq",
-            "ec4ezbfn",
-            "pnwmf2am",
+        if (
+            run.state == "finished"
+            and run.sweep is not None
+            and run.sweep.name
+            in (
+                "ch1poicp",
+                "gdopl9qq",
+                "ec4ezbfn",
+                "pnwmf2am",
+            )
         ):
-            loader.set_description(f"{run.name: <25}")
             # .summary contains the output keys/values for metrics like accuracy.
             #  We call ._json_dict to omit large files
             add_to_dict_of_lists(summary_dict, run.summary._json_dict)
@@ -56,13 +61,36 @@ if __name__ == "__main__":
             # .name is the human-readable name of the run.
             name_list.append(run.name)
             sweep_list.append(run.sweep.name)
-            state_list.append(run.state)
+
+            hist_df = run.history()
+            succ100_step = hist_df[hist_df["n_successes"] >= 100]["_step"].min()
+            csucc50_step = hist_df[hist_df["n_consecutive_successes"] >= 50][
+                "_step"
+            ].min()
+            csucc100_step = hist_df[hist_df["n_consecutive_successes"] >= 100][
+                "_step"
+            ].min()
+
+            succ100_step_list.append(succ100_step)
+            csucc50_step_list.append(csucc50_step)
+            csucc100_step_list.append(csucc100_step)
+
+            tcomp = run.summary._json_dict["total_complexity"]
+            scomp = run.summary._json_dict["saved_complexity"]
+            pi_units = run.config["pi_units_per_layer"]
+            vf_units = run.config["vf_units_per_layer"]
+            loader.set_description(
+                f"{run.name: <25} | {tcomp}({scomp}) | pi={pi_units: <4}, vf={vf_units: <4} | "
+                f"{succ100_step} {csucc50_step} {csucc100_step}"
+            )
 
     runs_df = pd.DataFrame(
         {
             "name": name_list,
             "sweep": sweep_list,
-            "state": state_list,
+            "success100_step": succ100_step_list,
+            "csuccess100_step": csucc100_step_list,
+            "csuccess50_step": csucc50_step_list,
             **summary_dict,
             **config_dict,
         }
