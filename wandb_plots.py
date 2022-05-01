@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 import pandas as pd
 
 import numpy as np
@@ -16,18 +16,23 @@ def get_mean_and_uncertainty_by_groups(df: pd.DataFrame, groups: List[str]):
     return mean_df, uncertainty_df
 
 
-def plot_regression(df: pd.DataFrame, x_name: str, y_name: str, ax: plt.Axes, deg=1):
-    experiment_settings = ["env_seed", "task_seed"]
-
-    success_df = df[~df[x_name].isna()]
-    fail_df = df[df[x_name].isna()]
+def plot_linregress(
+    df: pd.DataFrame,
+    x_name: str,
+    y_name: str,
+    ax: plt.Axes,
+    fail_y_name: str = "_step",
+    groups: Optional[List[str]] = None,
+):
+    success_df = df[~df[y_name].isna()]
+    fail_df = df[df[y_name].isna()]
 
     mean_succ_df, uncertainty_succ_df = get_mean_and_uncertainty_by_groups(
-        success_df, experiment_settings
+        success_df, groups
     )
 
     mean_fail_df, uncertainty_fail_df = get_mean_and_uncertainty_by_groups(
-        fail_df, experiment_settings
+        fail_df, groups
     )
 
     errorbar_config = {
@@ -38,44 +43,42 @@ def plot_regression(df: pd.DataFrame, x_name: str, y_name: str, ax: plt.Axes, de
         "elinewidth": 1,
     }
 
-    step = mean_succ_df[x_name]
-    tcomp = mean_succ_df[y_name]
+    mean_x = mean_succ_df[x_name]
+    mean_y = mean_succ_df[y_name]
 
     ax.errorbar(
-        tcomp,
-        step,
+        mean_x,
+        mean_y,
         yerr=uncertainty_succ_df[x_name],
         color="b",
         label="Success",
         **errorbar_config,
     )
 
-    stepfail = mean_fail_df["_step"]
-    tcompfail = mean_fail_df[y_name]
+    mean_x_fail = mean_fail_df[x_name]
+    mean_y_fail = mean_fail_df[fail_y_name]
     ax.errorbar(
-        tcompfail,
-        stepfail,
-        yerr=uncertainty_fail_df["_step"],
+        mean_x_fail,
+        mean_y_fail,
+        yerr=uncertainty_fail_df[fail_y_name],
         color="r",
         label="Fail (step limit)",
         **errorbar_config,
     )
 
-    # Loglog regression on points where multiple runs are sampled
-    x = np.log(tcomp[uncertainty_succ_df[x_name] > 0])
-    y = np.log(step[uncertainty_succ_df[x_name] > 0])
+    min_x = df[x_name].min()
+    max_x = df[x_name].max()
 
-    # reg: Polynomial = Polynomial([0]).fit(x, y, deg=deg)
-    # x_reg, y_reg = reg.linspace(domain=[np.min(np.log(tcomp)), np.max(np.log(15000))])
-    # ax.plot(
-    #     np.exp(x_reg),
-    #     np.exp(y_reg),
-    #     color="g",
-    #     label=f"Polyfit: {np.array_str(reg.coef, precision=3, suppress_small=True)}",
-    # )
+    min_y = df[fail_y_name].min()
+    max_y = df[fail_y_name].max()
+
+    # Loglog regression on points where multiple runs are sampled
+    multi_sampled = uncertainty_succ_df[y_name] > 0
+    x = np.log(mean_x[multi_sampled])
+    y = np.log(mean_y[multi_sampled])
 
     reg = linregress(x, y)
-    x_reg = np.linspace(np.min(np.log(tcomp)), np.max(np.log(15000)), 100)
+    x_reg = np.linspace(np.log(min_x), np.log(max_x) * 1.05, 100)
     y_reg = reg.slope * x_reg + reg.intercept
     ax.plot(
         np.exp(x_reg),
@@ -85,26 +88,18 @@ def plot_regression(df: pd.DataFrame, x_name: str, y_name: str, ax: plt.Axes, de
     )
 
     ax.loglog()
-    ax.set_ylim([np.min(step), 1.1e6])
-    ax.set_xlim([np.min(tcomp), 15000])
+    ax.set_xlim([min_x, 1.1 * max_x])
+    ax.set_ylim([min_y, 1.1 * max_y])
     ax.legend(loc="upper left", fontsize=5)
     return reg
 
 
-if __name__ == "__main__":
-    experiments_df = pd.read_csv("runs_data.csv")
-    complexity_name = "total_complexity"
-
-    # Replace invalid task_seed
-    experiments_df["task_seed"].mask(
-        experiments_df["task_seed"] == "[0]", 0, inplace=True
-    )
-
+def plot_grid(runs_df: pd.DataFrame, x_name: str):
     # Gather grid values
-    pi_units_per_layer_values = pd.unique(experiments_df["pi_units_per_layer"])
+    pi_units_per_layer_values = pd.unique(runs_df["pi_units_per_layer"])
     pi_units_per_layer_values.sort()
 
-    vf_units_per_layer_values = pd.unique(experiments_df["vf_units_per_layer"])
+    vf_units_per_layer_values = pd.unique(runs_df["vf_units_per_layer"])
     vf_units_per_layer_values.sort()
 
     # Prepare subplots
@@ -124,15 +119,14 @@ if __name__ == "__main__":
                 & (experiments_df["pi_units_per_layer"] == pi_units)
             ]
             ax = axes[i, j]
-            reg = plot_regression(
+            reg = plot_linregress(
                 filtered_df,
-                x_name="csuccess50_step",
-                y_name=complexity_name,
-                deg=deg,
+                x_name=x_name,
+                y_name="csuccess50_step",
                 ax=ax,
+                groups=["env_seed", "task_seed"],
             )
 
-            print(f"pi={pi_units}, vf={vf_units}: {reg}")
             # coefs[i, j, :] = np.array(reg.coef)
             coefs[i, j, :] = np.array([reg.intercept, reg.slope])
             # axes[i, j].set_suptitle(f"{reg.slope} {reg.rvalue}")
@@ -155,14 +149,14 @@ if __name__ == "__main__":
             # axes[i, j].setTitle(f"pi-{pi_units} vf-{vf_units}")
 
     fig.suptitle(
-        f"Correlation between steps to convergence and {complexity_name}"
+        f"Correlation between steps to convergence and {x_name}"
         " for multiple network sizes",
         fontsize=16,
     )
     fig.text(s="Units per layer in value network", x=0.5, y=1 - 0.08, ha="center")
     fig.supylabel("Units per layer in policy network", x=0.08)
 
-    fig.supxlabel(f"{complexity_name.capitalize()}", y=0.04)
+    fig.supxlabel(f"{x_name.capitalize()}", y=0.04)
     fig.text(s="Steps", x=1 - 0.08, y=0.5, rotation=270, va="center")
     plt.show()
 
@@ -205,3 +199,14 @@ if __name__ == "__main__":
 
     fig.suptitle("Polynomial fit coefficients for different network sizes")
     plt.show()
+
+
+if __name__ == "__main__":
+    experiments_df = pd.read_csv("runs_data.csv")
+
+    # Replace invalid task_seed
+    experiments_df["task_seed"].mask(
+        experiments_df["task_seed"] == "[0]", 0, inplace=True
+    )
+
+    plot_grid(experiments_df, "total_complexity")
