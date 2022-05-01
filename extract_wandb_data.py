@@ -99,4 +99,4 @@ if __name__ == "__main__":
     print(list(summary_dict.keys()), list(config_dict.keys()))
     print(runs_df.head(10))
 
-    runs_df.to_csv("project.csv")
+    runs_df.to_csv("runs_data.csv")

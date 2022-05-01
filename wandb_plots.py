@@ -2,7 +2,7 @@ from typing import List
 import pandas as pd
 
 import numpy as np
-from numpy.polynomial import Polynomial
+from scipy.stats import linregress
 
 import matplotlib.pyplot as plt
 
@@ -16,12 +16,11 @@ def get_mean_and_uncertainty_by_groups(df: pd.DataFrame, groups: List[str]):
     return mean_df, uncertainty_df
 
 
-def plot_regression(df: pd.DataFrame, ax: plt.Axes, deg=1):
+def plot_regression(df: pd.DataFrame, x_name: str, y_name: str, ax: plt.Axes, deg=1):
     experiment_settings = ["env_seed", "task_seed"]
-    criterion = "success100_step"
 
-    success_df = df[~df[criterion].isna()]
-    fail_df = df[df[criterion].isna()]
+    success_df = df[~df[x_name].isna()]
+    fail_df = df[df[x_name].isna()]
 
     mean_succ_df, uncertainty_succ_df = get_mean_and_uncertainty_by_groups(
         success_df, experiment_settings
@@ -32,27 +31,27 @@ def plot_regression(df: pd.DataFrame, ax: plt.Axes, deg=1):
     )
 
     errorbar_config = {
-        "marker": "x",
+        "marker": "",
         "markersize": 2,
         "linestyle": "",
         "capsize": 2,
         "elinewidth": 1,
     }
 
-    step = mean_succ_df[criterion]
-    tcomp = mean_succ_df["total_complexity"]
+    step = mean_succ_df[x_name]
+    tcomp = mean_succ_df[y_name]
 
     ax.errorbar(
         tcomp,
         step,
-        yerr=uncertainty_succ_df[criterion],
+        yerr=uncertainty_succ_df[x_name],
         color="b",
         label="Success",
         **errorbar_config,
     )
 
     stepfail = mean_fail_df["_step"]
-    tcompfail = mean_fail_df["total_complexity"]
+    tcompfail = mean_fail_df[y_name]
     ax.errorbar(
         tcompfail,
         stepfail,
@@ -61,17 +60,30 @@ def plot_regression(df: pd.DataFrame, ax: plt.Axes, deg=1):
         label="Fail (step limit)",
         **errorbar_config,
     )
-    reg = Polynomial([0]).fit(np.log(tcomp), np.log(step), deg=deg)
 
-    x_reg, y_reg = reg.linspace(
-        100, domain=[np.min(np.log(tcomp)), np.max(np.log(15000))]
-    )
+    # Loglog regression on points where multiple runs are sampled
+    x = np.log(tcomp[uncertainty_succ_df[x_name] > 0])
+    y = np.log(step[uncertainty_succ_df[x_name] > 0])
+
+    # reg: Polynomial = Polynomial([0]).fit(x, y, deg=deg)
+    # x_reg, y_reg = reg.linspace(domain=[np.min(np.log(tcomp)), np.max(np.log(15000))])
+    # ax.plot(
+    #     np.exp(x_reg),
+    #     np.exp(y_reg),
+    #     color="g",
+    #     label=f"Polyfit: {np.array_str(reg.coef, precision=3, suppress_small=True)}",
+    # )
+
+    reg = linregress(x, y)
+    x_reg = np.linspace(np.min(np.log(tcomp)), np.max(np.log(15000)), 100)
+    y_reg = reg.slope * x_reg + reg.intercept
     ax.plot(
         np.exp(x_reg),
         np.exp(y_reg),
         color="g",
-        label=f"Polyfit: {np.array_str(reg.coef, precision=3, suppress_small=True)}",
+        label=f"{reg.slope:.3f}x + {reg.intercept:.3f}: r={reg.rvalue:.3f}",
     )
+
     ax.loglog()
     ax.set_ylim([np.min(step), 1.1e6])
     ax.set_xlim([np.min(tcomp), 15000])
@@ -80,7 +92,8 @@ def plot_regression(df: pd.DataFrame, ax: plt.Axes, deg=1):
 
 
 if __name__ == "__main__":
-    experiments_df = pd.read_csv("project.csv")
+    experiments_df = pd.read_csv("runs_data.csv")
+    complexity_name = "total_complexity"
 
     # Replace invalid task_seed
     experiments_df["task_seed"].mask(
@@ -102,7 +115,7 @@ if __name__ == "__main__":
         sharey=True,
     )
 
-    deg = 2
+    deg = 1
     coefs = np.zeros(axes.shape + (deg + 1,))
     for i, pi_units in enumerate(pi_units_per_layer_values):
         for j, vf_units in enumerate(vf_units_per_layer_values):
@@ -111,13 +124,17 @@ if __name__ == "__main__":
                 & (experiments_df["pi_units_per_layer"] == pi_units)
             ]
             ax = axes[i, j]
-            reg = plot_regression(filtered_df, deg=deg, ax=ax)
-
-            print(
-                f"pi={pi_units}, vf={vf_units}: "
-                f"{np.array_str(reg.coef, precision=3, suppress_small=True)}"
+            reg = plot_regression(
+                filtered_df,
+                x_name="csuccess50_step",
+                y_name=complexity_name,
+                deg=deg,
+                ax=ax,
             )
-            coefs[i, j, :] = np.array(reg.coef)
+
+            print(f"pi={pi_units}, vf={vf_units}: {reg}")
+            # coefs[i, j, :] = np.array(reg.coef)
+            coefs[i, j, :] = np.array([reg.intercept, reg.slope])
             # axes[i, j].set_suptitle(f"{reg.slope} {reg.rvalue}")
             labelright = False
             if i == 0:
@@ -138,14 +155,15 @@ if __name__ == "__main__":
             # axes[i, j].setTitle(f"pi-{pi_units} vf-{vf_units}")
 
     fig.suptitle(
-        "Correlation between steps to convergence and total complexity for multiple network sizes",
+        f"Correlation between steps to convergence and {complexity_name}"
+        " for multiple network sizes",
         fontsize=16,
     )
     fig.text(s="Units per layer in value network", x=0.5, y=1 - 0.08, ha="center")
     fig.supylabel("Units per layer in policy network", x=0.08)
 
-    fig.supxlabel("Steps", y=0.04)
-    fig.text(s="Total complexity", x=1 - 0.04, y=0.5, rotation=270, va="center")
+    fig.supxlabel(f"{complexity_name.capitalize()}", y=0.04)
+    fig.text(s="Steps", x=1 - 0.08, y=0.5, rotation=270, va="center")
     plt.show()
 
     fig, axes = plt.subplots(1, deg + 1, sharey=True)
