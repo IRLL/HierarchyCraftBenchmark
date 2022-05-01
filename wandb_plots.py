@@ -45,11 +45,10 @@ def plot_linregress(
 
     mean_x = mean_succ_df[x_name]
     mean_y = mean_succ_df[y_name]
-
     ax.errorbar(
         mean_x,
         mean_y,
-        yerr=uncertainty_succ_df[x_name],
+        yerr=uncertainty_succ_df[y_name],
         color="b",
         label="Success",
         **errorbar_config,
@@ -202,11 +201,39 @@ def plot_grid(runs_df: pd.DataFrame, x_name: str):
 
 
 if __name__ == "__main__":
-    experiments_df = pd.read_csv("runs_data.csv")
+    experiments_df = pd.read_csv("runs_data_64.csv")
 
     # Replace invalid task_seed
     experiments_df["task_seed"].mask(
         experiments_df["task_seed"] == "[0]", 0, inplace=True
     )
 
-    plot_grid(experiments_df, "total_complexity")
+    # plot_grid(experiments_df, "total_complexity")
+
+    filtered_df = experiments_df[
+        (experiments_df["vf_units_per_layer"] == 64)
+        & (experiments_df["pi_units_per_layer"] == 64)
+    ]
+
+    ax = plt.subplot()
+    x_name = "learning_complexity"
+    y_name = "csuccess50_step"
+    reg = plot_linregress(
+        filtered_df,
+        x_name=x_name,
+        y_name=y_name,
+        ax=ax,
+        groups=["env_seed", "task_seed"],
+    )
+    pretty_x_name = x_name.replace("_", " ")
+    plt.title(f"Steps to 50 consecutive successes with respect to {pretty_x_name}")
+    plt.xlabel(f"{pretty_x_name.capitalize()}")
+
+    pretty_y_name_parts = ["Steps to reach"]
+    pretty_y_name_parts.append(y_name.split("_")[0][-2:])
+    if y_name.startswith("c"):
+        pretty_y_name_parts.append("consecutive")
+    pretty_y_name_parts.append("successes")
+    pretty_y_name = " ".join(pretty_y_name_parts)
+    plt.ylabel(f"{pretty_y_name}")
+    plt.show()
