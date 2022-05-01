@@ -7,7 +7,7 @@ from tqdm import tqdm
 
 def is_relevent_parameter(name: str):
     return (
-        name in ("task_name", "_step")
+        name in ("task_name", "_step", "reward_shaping")
         or name.startswith("pi")
         or name.startswith("vf")
         or name.startswith("mean_ep")
@@ -32,6 +32,8 @@ def add_to_dict_of_lists(dictionary: Dict[Any, list], new_dict: Dict[Any, list])
 if __name__ == "__main__":
     api = wandb.Api(timeout=60)
     entity, project = "mathisfederico", "crafting-benchmark"
+    csv_path = "runs_data_64.csv"
+
     runs = api.runs(f"{entity}/{project}")
 
     summary_dict, config_dict = {}, {}
@@ -40,7 +42,11 @@ if __name__ == "__main__":
 
     loader = tqdm(runs, total=len(runs))
     for run in loader:
-        if run.state == "finished":
+        if (
+            run.state == "finished"
+            and run.config.get("pi_units_per_layer", 64) == 64
+            and run.config.get("vf_units_per_layer", 64) == 64
+        ):
             # .summary contains the output keys/values for metrics like accuracy.
             #  We call ._json_dict to omit large files
             add_to_dict_of_lists(summary_dict, run.summary._json_dict)
@@ -85,8 +91,5 @@ if __name__ == "__main__":
             **config_dict,
         }
     )
-
-    print(list(summary_dict.keys()), list(config_dict.keys()))
-    print(runs_df.head(10))
-
-    runs_df.to_csv("runs_data.csv")
+    runs_df.to_csv(csv_path)
+    print(f"Saved to {csv_path}")

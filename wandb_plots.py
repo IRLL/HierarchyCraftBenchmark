@@ -232,7 +232,6 @@ if __name__ == "__main__":
     )
 
     # plot_grid(experiments_df, "total_complexity", "csuccess50_step")
-    print(experiments_df.columns)
     filtered_df = experiments_df[
         (experiments_df["vf_units_per_layer"] == 64)
         & (experiments_df["pi_units_per_layer"] == 64)
