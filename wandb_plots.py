@@ -89,11 +89,11 @@ def plot_linregress(
     ax.loglog()
     ax.set_xlim([min_x, 1.1 * max_x])
     ax.set_ylim([min_y, 1.1 * max_y])
-    ax.legend(loc="upper left", fontsize=5)
+    ax.legend(loc="upper left")
     return reg
 
 
-def plot_grid(runs_df: pd.DataFrame, x_name: str):
+def plot_grid(runs_df: pd.DataFrame, x_name: str, y_name: str):
     # Gather grid values
     pi_units_per_layer_values = pd.unique(runs_df["pi_units_per_layer"])
     pi_units_per_layer_values.sort()
@@ -121,7 +121,7 @@ def plot_grid(runs_df: pd.DataFrame, x_name: str):
             reg = plot_linregress(
                 filtered_df,
                 x_name=x_name,
-                y_name="csuccess50_step",
+                y_name=y_name,
                 ax=ax,
                 groups=["env_seed", "task_seed"],
             )
@@ -200,26 +200,10 @@ def plot_grid(runs_df: pd.DataFrame, x_name: str):
     plt.show()
 
 
-if __name__ == "__main__":
-    experiments_df = pd.read_csv("runs_data_64.csv")
-
-    # Replace invalid task_seed
-    experiments_df["task_seed"].mask(
-        experiments_df["task_seed"] == "[0]", 0, inplace=True
-    )
-
-    # plot_grid(experiments_df, "total_complexity")
-
-    filtered_df = experiments_df[
-        (experiments_df["vf_units_per_layer"] == 64)
-        & (experiments_df["pi_units_per_layer"] == 64)
-    ]
-
+def plot_single_linregress(experiments_df: pd.DataFrame, x_name: str, y_name: str):
     ax = plt.subplot()
-    x_name = "learning_complexity"
-    y_name = "csuccess50_step"
-    reg = plot_linregress(
-        filtered_df,
+    plot_linregress(
+        experiments_df,
         x_name=x_name,
         y_name=y_name,
         ax=ax,
@@ -236,4 +220,41 @@ if __name__ == "__main__":
     pretty_y_name_parts.append("successes")
     pretty_y_name = " ".join(pretty_y_name_parts)
     plt.ylabel(f"{pretty_y_name}")
+    plt.show()
+
+
+if __name__ == "__main__":
+    experiments_df = pd.read_csv("runs_data_64.csv")
+
+    # Replace invalid task_seed
+    experiments_df["task_seed"].mask(
+        experiments_df["task_seed"] == "[0]", 0, inplace=True
+    )
+
+    # plot_grid(experiments_df, "total_complexity", "csuccess50_step")
+    print(experiments_df.columns)
+    filtered_df = experiments_df[
+        (experiments_df["vf_units_per_layer"] == 64)
+        & (experiments_df["pi_units_per_layer"] == 64)
+        & (experiments_df["reward_shaping"] == 2)
+    ]
+    plot_single_linregress(filtered_df, "learning_complexity", "csuccess50_step")
+    plot_single_linregress(filtered_df, "total_complexity", "csuccess50_step")
+
+    x_range = np.linspace(
+        np.min(filtered_df["learning_complexity"]),
+        np.max(filtered_df["total_complexity"]),
+    )
+    plt.plot(x_range, x_range, label="Indentity", linestyle=":", color="g")
+    plt.scatter(
+        filtered_df["total_complexity"],
+        filtered_df["learning_complexity"],
+        marker="+",
+        label="experiments",
+    )
+    plt.legend()
+    plt.xlabel("Total complexity")
+    plt.ylabel("Learning complexity")
+    plt.loglog()
+    plt.title("Correlation between complexities")
     plt.show()
