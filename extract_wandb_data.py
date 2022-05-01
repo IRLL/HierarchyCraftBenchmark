@@ -47,6 +47,11 @@ if __name__ == "__main__":
             and run.config.get("pi_units_per_layer", 64) == 64
             and run.config.get("vf_units_per_layer", 64) == 64
         ):
+            pi_units = run.config.get("pi_units_per_layer", 64)
+            vf_units = run.config.get("vf_units_per_layer", 64)
+            run.config["pi_units_per_layer"] = pi_units
+            run.config["vf_units_per_layer"] = vf_units
+
             # .summary contains the output keys/values for metrics like accuracy.
             #  We call ._json_dict to omit large files
             add_to_dict_of_lists(summary_dict, run.summary._json_dict)
@@ -73,8 +78,7 @@ if __name__ == "__main__":
 
             tcomp = run.summary._json_dict["total_complexity"]
             scomp = run.summary._json_dict["saved_complexity"]
-            pi_units = run.config.get("pi_units_per_layer", 64)
-            vf_units = run.config.get("vf_units_per_layer", 64)
+
             loader.set_description(
                 f"{run.name: <25} | {tcomp}({scomp}) | pi={pi_units: <4}, vf={vf_units: <4} | "
                 f"{succ100_step} {csucc50_step} {csucc90_step}"
