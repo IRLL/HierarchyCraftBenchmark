@@ -5,6 +5,8 @@ import numpy as np
 from scipy.stats import linregress
 
 import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
+from matplotlib.ticker import MultipleLocator
 
 
 def get_mean_and_uncertainty_by_groups(df: pd.DataFrame, groups: List[str]):
@@ -223,23 +225,7 @@ def plot_single_linregress(experiments_df: pd.DataFrame, x_name: str, y_name: st
     plt.show()
 
 
-if __name__ == "__main__":
-    experiments_df = pd.read_csv("runs_data_64.csv")
-
-    # Replace invalid task_seed
-    experiments_df["task_seed"].mask(
-        experiments_df["task_seed"] == "[0]", 0, inplace=True
-    )
-
-    # plot_grid(experiments_df, "total_complexity", "csuccess50_step")
-    filtered_df = experiments_df[
-        (experiments_df["vf_units_per_layer"] == 64)
-        & (experiments_df["pi_units_per_layer"] == 64)
-        & (experiments_df["reward_shaping"] == 2)
-    ]
-    plot_single_linregress(filtered_df, "learning_complexity", "csuccess50_step")
-    plot_single_linregress(filtered_df, "total_complexity", "csuccess50_step")
-
+def plot_complexities_comparison(filtered_df: pd.DataFrame):
     x_range = np.linspace(
         np.min(filtered_df["learning_complexity"]),
         np.max(filtered_df["total_complexity"]),
@@ -257,3 +243,89 @@ if __name__ == "__main__":
     plt.loglog()
     plt.title("Correlation between complexities")
     plt.show()
+
+
+if __name__ == "__main__":
+    experiments_df = pd.read_csv("runs_data_64.csv")
+
+    # Replace invalid task_seed
+    experiments_df["task_seed"].mask(
+        experiments_df["task_seed"] == "[0]", 0, inplace=True
+    )
+
+    # Plot reward_shaping influence
+
+    labels = {}
+
+    def add_label(violin, label):
+        color = violin["bodies"][0].get_facecolor().flatten()
+        if label not in labels:
+            labels[label] = (mpatches.Patch(color=color), label)
+
+    ax = plt.subplot()
+    filtered_df = experiments_df[
+        (experiments_df["vf_units_per_layer"] == 64)
+        & (experiments_df["pi_units_per_layer"] == 64)
+        & (experiments_df["sweep"].isin(["08rl83cn", "cfix2jhd"]))
+        & (experiments_df["task_seed"].astype(int) <= 2)
+        & (experiments_df["env_seed"].astype(int) <= 9)
+    ]
+    reward_shapings = ("None", "All items", "All useful items", "Direct useful items")
+    for i, reward_shaping in enumerate(reward_shapings):
+        successes_df = filtered_df[
+            (filtered_df["reward_shaping"] == i)
+            & (~filtered_df["csuccess50_step"].isna())
+        ]
+        fails_df = filtered_df[
+            (filtered_df["reward_shaping"] == i)
+            & (filtered_df["csuccess50_step"].isna())
+        ]
+        parts = plt.violinplot(
+            [successes_df["total_complexity"]],
+            [i],
+            vert=True,
+            showextrema=False,
+            widths=len(successes_df) / (len(fails_df) + len(successes_df)),
+        )
+        for pc in parts["bodies"]:
+            pc.set_facecolor("#39D33E")
+            pc.set_edgecolor("#39D33E")
+            pc.set_alpha(0.5)
+        add_label(parts, "Success")
+
+        parts = plt.violinplot(
+            [fails_df["total_complexity"]],
+            [i],
+            widths=len(fails_df) / (len(fails_df) + len(successes_df)),
+            showextrema=False,
+        )
+        for pc in parts["bodies"]:
+            pc.set_facecolor("#D43F3A")
+            pc.set_edgecolor("#D43F3A")
+            pc.set_alpha(0.5)
+        add_label(parts, "Fail")
+
+    ax.set_xticks(np.arange(len(reward_shapings)), labels=reward_shapings)
+    plt.legend(*zip(*labels.values()))
+    plt.grid(which="major", axis="y", alpha=0.4)
+    plt.grid(which="minor", axis="y", alpha=0.25)
+    plt.title("Influence of reward shaping")
+    plt.yticks(np.arange(0, np.max(filtered_df["total_complexity"]), step=1000))
+    ax.yaxis.set_minor_locator(MultipleLocator(200))
+    plt.xlabel("Reward shaping type")
+    plt.ylabel("Task total complexity")
+    plt.show()
+
+    # Plot 64, 64 correlations
+    # filtered_df = experiments_df[
+    #     (experiments_df["vf_units_per_layer"] == 64)
+    #     & (experiments_df["pi_units_per_layer"] == 64)
+    #     & (experiments_df["reward_shaping"] == 2)
+    # ]
+    # plot_single_linregress(filtered_df, "total_complexity", "csuccess50_step")
+    # plot_single_linregress(filtered_df, "learning_complexity", "csuccess50_step")
+    # plot_complexities_comparison(filtered_df)
+
+    # Plot correlations wrt networks sizes
+    # plot_grid(experiments_df, "total_complexity", "csuccess50_step")
+    # plot_grid(experiments_df, "learning_complexity", "csuccess50_step")
