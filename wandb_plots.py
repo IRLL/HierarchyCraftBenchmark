@@ -245,16 +245,7 @@ def plot_complexities_comparison(filtered_df: pd.DataFrame):
     plt.show()
 
 
-if __name__ == "__main__":
-    experiments_df = pd.read_csv("runs_data_64.csv")
-
-    # Replace invalid task_seed
-    experiments_df["task_seed"].mask(
-        experiments_df["task_seed"] == "[0]", 0, inplace=True
-    )
-
-    # Plot reward_shaping influence
-
+def plot_reward_shaping_comparison(experiments_df: pd.DataFrame):
     labels = {}
 
     def add_label(violin, label):
@@ -315,6 +306,19 @@ if __name__ == "__main__":
     plt.xlabel("Reward shaping type")
     plt.ylabel("Task total complexity")
     plt.show()
+
+
+if __name__ == "__main__":
+    pass
+    # experiments_df = pd.read_csv("runs_data.csv")
+
+    # Replace invalid task_seed
+    # experiments_df["task_seed"].mask(
+    #     experiments_df["task_seed"] == "[0]", 0, inplace=True
+    # )
+
+    # Plot reward_shaping influence
+    # plot_reward_shaping_comparison(experiments_df)
 
     # Plot 64, 64 correlations
     # filtered_df = experiments_df[
