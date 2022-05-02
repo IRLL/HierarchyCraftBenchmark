@@ -196,9 +196,13 @@ def plot_grid(runs_df: pd.DataFrame, x_name: str, y_name: str):
                     fontsize=9,
                 )
 
-        ax.set_title(f"Degree {degree}")
+        degree_name = f"Degree {degree}"
+        if degree == 0:
+            degree_name = "Intercept"
+        elif degree == 1:
+            degree_name = "Slope"
+        ax.set_title(degree_name)
 
-    fig.suptitle("Polynomial fit coefficients for different network sizes")
     plt.show()
 
 
