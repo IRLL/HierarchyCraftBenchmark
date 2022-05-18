@@ -122,8 +122,8 @@ if __name__ == "__main__":
     def count_parameters(model: MaskableActorCriticPolicy):
         return sum(p.numel() for p in model.parameters() if p.requires_grad)
 
-    pi_arch = [config[f"pi_units_per_layer"] for _ in range(config["pi_n_layers"])]
-    vf_arch = [config[f"vf_units_per_layer"] for _ in range(config["vf_n_layers"])]
+    pi_arch = [config["pi_units_per_layer"] for _ in range(config["pi_n_layers"])]
+    vf_arch = [config["vf_units_per_layer"] for _ in range(config["vf_n_layers"])]
     net_arch = [dict(pi=pi_arch, vf=vf_arch)]
     agent = MaskablePPO(
         config["policy_type"],
@@ -141,11 +141,12 @@ if __name__ == "__main__":
             "total_complexity": lcomp + comp_saved,
             "saved_complexity": comp_saved,
             "requirement_graph": wandb.Image(requirement_graph_path),
-            "solving_option": wandb.Image(solving_option_graph_path),
+            "solving_option_graph": wandb.Image(solving_option_graph_path),
             "trainable_parameters": count_parameters(agent.policy),
         }
     )
 
+    # pylint: disable=unexpected-keyword-arg
     agent.learn(
         total_timesteps=config["total_timesteps"],
         callback=WandbCallback(
