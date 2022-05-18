@@ -1,10 +1,5 @@
 import time
-from crafting import CraftingEnv, MineCraftingEnv, RandomCraftingEnv
-from crafting.task import RewardShaping, TaskObtainItem, get_task_from_name
-
-from option_graph.metrics.complexity import learning_complexity
-from option_graph.metrics.complexity.histograms import nodes_histograms
-from option_graph.option import Option
+import wandb
 
 from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.vec_env import DummyVecEnv, VecVideoRecorder
@@ -12,9 +7,14 @@ from stable_baselines3.common.vec_env import DummyVecEnv, VecVideoRecorder
 from sb3_contrib.common.maskable.policies import MaskableActorCriticPolicy
 from sb3_contrib.ppo_mask.ppo_mask import MaskablePPO
 
-import wandb
-from callbacks import WandbCallback
+from option_graph.metrics.complexity import learning_complexity
+from option_graph.metrics.complexity.histograms import nodes_histograms
+from option_graph.option import Option
 
+from crafting import CraftingEnv, MineCraftingEnv, RandomCraftingEnv
+from crafting.task import RewardShaping, TaskObtainItem, get_task_from_name
+
+from callbacks import WandbCallback
 from plots import save_requirement_graph, save_option_graph
 
 if __name__ == "__main__":
@@ -45,7 +45,7 @@ if __name__ == "__main__":
         "max_episode_steps": 50,
         "n_items": 50,
         "n_tools": 0,
-        "n_foundables": 5,
+        "n_findables": 5,
         "n_zones": 1,
         "task": task_name,
     }
@@ -65,7 +65,7 @@ if __name__ == "__main__":
             env = RandomCraftingEnv(
                 n_items=config["n_items"],
                 n_tools=config["n_tools"],
-                n_foundables=config["n_foundables"],
+                n_findables=config["n_findables"],
                 n_required_tools=[0.25, 0.4, 0.2, 0.1, 0.05],
                 n_inputs_per_craft=[0.1, 0.6, 0.3],
                 n_zones=config["n_zones"],
