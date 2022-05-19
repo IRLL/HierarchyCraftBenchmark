@@ -1,32 +1,27 @@
 import time
-import wandb
 
 from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.vec_env import DummyVecEnv, VecVideoRecorder
 
-from sb3_contrib.common.maskable.policies import MaskableActorCriticPolicy
 from sb3_contrib.ppo_mask.ppo_mask import MaskablePPO
 
 from option_graph.metrics.complexity import learning_complexity
 from option_graph.metrics.complexity.histograms import nodes_histograms
 from option_graph.option import Option
 
+import wandb
+
 from crafting import CraftingEnv, MineCraftingEnv, RandomCraftingEnv
-from crafting.task import RewardShaping, TaskObtainItem, get_task_from_name
+from crafting.task import RewardShaping, TaskObtainItem, get_task
 
 from callbacks import WandbCallback
 from plots import save_requirement_graph, save_option_graph
 
 if __name__ == "__main__":
 
-    MINECRAFTING = False
-
-    if MINECRAFTING:
-        env_name = "MineCrafting-v1"
-        task_name = "obtain_book"
-    else:
-        env_name = "RandomCrafting-v1"
-        task_name = "obtain_random_item"
+    env_name = "RandomCrafting-v1"
+    task_name = "obtain_random_item"
+    project = "crafting-benchmark"
 
     config = {
         "agent": "MaskablePPO",
@@ -49,11 +44,6 @@ if __name__ == "__main__":
         "n_zones": 1,
         "task": task_name,
     }
-
-    if config["env_name"] == "RandomCrafting-v1":
-        project = "crafting-benchmark"
-    elif config["env_name"] == "MineCrafting-v1":
-        project = "minecrafting-benchmark"
 
     run = wandb.init(project=project, config=config, monitor_gym=True)
     timestamp = time.strftime("%Y%m%d_%H%M%S")
@@ -81,9 +71,9 @@ if __name__ == "__main__":
             raise ValueError
 
         reward_shaping = RewardShaping(config["reward_shaping"])
-        task = get_task_from_name(
-            config["task"],
+        task = get_task(
             world=env.world,
+            task_name=config["task"],
             reward_shaping=reward_shaping,
             seed=config["task_seed"],
         )
@@ -119,9 +109,6 @@ if __name__ == "__main__":
     lcomp, comp_saved = learning_complexity(solving_option, used_nodes_all)
     print(f"OPTION: {str(solving_option)}: {lcomp} ({comp_saved})")
 
-    def count_parameters(model: MaskableActorCriticPolicy):
-        return sum(p.numel() for p in model.parameters() if p.requires_grad)
-
     pi_arch = [config["pi_units_per_layer"] for _ in range(config["pi_n_layers"])]
     vf_arch = [config["vf_units_per_layer"] for _ in range(config["vf_n_layers"])]
     net_arch = [dict(pi=pi_arch, vf=vf_arch)]
@@ -142,7 +129,6 @@ if __name__ == "__main__":
             "saved_complexity": comp_saved,
             "requirement_graph": wandb.Image(requirement_graph_path),
             "solving_option_graph": wandb.Image(solving_option_graph_path),
-            "trainable_parameters": count_parameters(agent.policy),
         }
     )
 
