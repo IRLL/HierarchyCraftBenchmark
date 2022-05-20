@@ -20,7 +20,6 @@ from plots import save_requirement_graph, save_option_graph
 if __name__ == "__main__":
 
     env_name = "RandomCrafting-v1"
-    task_name = "obtain_random_item"
     project = "crafting-benchmark"
 
     config = {
@@ -35,14 +34,14 @@ if __name__ == "__main__":
         "max_n_consecutive_successes": 100,
         "env_name": env_name,
         "env_seed": 1,
-        "task_seed": 1,
+        "task_seed": None,
+        "task_complexity": 243,
         "reward_shaping": RewardShaping.ALL_USEFUL.value,
         "max_episode_steps": 50,
         "n_items": 50,
         "n_tools": 0,
         "n_findables": 5,
         "n_zones": 1,
-        "task": task_name,
     }
 
     run = wandb.init(project=project, config=config, monitor_gym=True)
@@ -71,13 +70,24 @@ if __name__ == "__main__":
             raise ValueError
 
         reward_shaping = RewardShaping(config["reward_shaping"])
-        task = get_task(
-            world=env.world,
-            task_name=config["task"],
-            reward_shaping=reward_shaping,
-            seed=config["task_seed"],
-        )
+
+        if config["task_complexity"] is not None:
+            config["task_seed"] = None
+            task = get_task(
+                world=env.world,
+                task_complexity=config["task_complexity"],
+                reward_shaping=reward_shaping,
+            )
+        else:
+            task = get_task(
+                world=env.world,
+                task_name=config["task"],
+                reward_shaping=reward_shaping,
+                seed=config["task_seed"],
+            )
         print(f"{task=} | {reward_shaping=}")
+        config["task"] = task.name
+
         env.add_task(task, can_end=True)
         env = Monitor(env)  # record stats such as returns
         return env
