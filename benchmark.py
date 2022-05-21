@@ -1,3 +1,4 @@
+import os
 import time
 
 from stable_baselines3.common.monitor import Monitor
@@ -76,6 +77,9 @@ if __name__ == "__main__":
             task = get_task(
                 world=env.world,
                 task_complexity=config["task_complexity"],
+                cache_path=os.path.join(
+                    "cache", f'{config["env_name"]}_{config["env_seed"]}'
+                ),
                 reward_shaping=reward_shaping,
             )
         else:

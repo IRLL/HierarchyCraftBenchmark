@@ -144,3 +144,6 @@ models
 
 # Data
 *.csv
+
+# Cache
+cache
