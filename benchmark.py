@@ -43,7 +43,7 @@ if __name__ == "__main__":
         "task_seed": None,
         "task_complexity": 243,
         "reward_shaping": RewardShaping.ALL_USEFUL.value,
-        "max_episode_steps": None,
+        "max_episode_steps": "auto",
         "time_factor": 2.0,
         "n_items": 50,
         "n_tools": 0,
