@@ -13,7 +13,12 @@ from option_graph.option import Option
 import wandb
 
 from crafting import CraftingEnv, MineCraftingEnv, RandomCraftingEnv
-from crafting.task import RewardShaping, TaskObtainItem, get_task
+from crafting.task import (
+    RewardShaping,
+    TaskObtainItem,
+    adaptative_max_episode_step,
+    get_task,
+)
 
 from callbacks import WandbCallback
 from plots import save_requirement_graph, save_option_graph
@@ -38,7 +43,8 @@ if __name__ == "__main__":
         "task_seed": None,
         "task_complexity": 243,
         "reward_shaping": RewardShaping.ALL_USEFUL.value,
-        "max_episode_steps": 50,
+        "max_episode_steps": None,
+        "time_factor": 2.0,
         "n_items": 50,
         "n_tools": 0,
         "n_findables": 5,
@@ -49,6 +55,11 @@ if __name__ == "__main__":
     timestamp = time.strftime("%Y%m%d_%H%M%S")
     run_dirname = f"{timestamp}-{run.id}"
     config = wandb.config
+    config["max_episode_steps"] = (
+        config["max_episode_steps"]
+        if isinstance(config["max_episode_steps"], int)
+        else None
+    )
 
     def make_env():
         if config["env_name"] == "RandomCrafting-v1":
@@ -91,6 +102,12 @@ if __name__ == "__main__":
             )
         print(f"{task=} | {reward_shaping=}")
         config["task"] = task.name
+
+        if config["max_episode_steps"] is None:
+            adaptative_max_step = adaptative_max_episode_step(
+                env.world, task, time_factor=config["time_factor"]
+            )
+            env.max_step = config["max_episode_steps"] = adaptative_max_step
 
         env.add_task(task, can_end=True)
         env = Monitor(env)  # record stats such as returns
