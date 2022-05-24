@@ -37,7 +37,7 @@ if __name__ == "__main__":
         "vf_n_layers": 3,
         "vf_units_per_layer": 64,
         "total_timesteps": 1e6,
-        "max_n_consecutive_successes": 100,
+        "max_n_consecutive_successes": 200,
         "env_name": env_name,
         "env_seed": 1,
         "task_seed": None,
@@ -55,10 +55,11 @@ if __name__ == "__main__":
     timestamp = time.strftime("%Y%m%d_%H%M%S")
     run_dirname = f"{timestamp}-{run.id}"
     config = wandb.config
-    config["max_episode_steps"] = (
+
+    max_episode_steps = (
         config["max_episode_steps"]
         if isinstance(config["max_episode_steps"], int)
-        else None
+        else 200
     )
 
     def make_env():
@@ -70,12 +71,12 @@ if __name__ == "__main__":
                 n_required_tools=[0.25, 0.4, 0.2, 0.1, 0.05],
                 n_inputs_per_craft=[0.1, 0.6, 0.3],
                 n_zones=config["n_zones"],
-                max_step=config["max_episode_steps"],
+                max_step=max_episode_steps,
                 seed=config["env_seed"],
             )
         elif config["env_name"] == "MineCrafting-v1":
             env = MineCraftingEnv(
-                max_step=config["max_episode_steps"],
+                max_step=max_episode_steps,
                 seed=config["env_seed"],
             )
         else:
@@ -103,11 +104,12 @@ if __name__ == "__main__":
         print(f"{task=} | {reward_shaping=}")
         config["task"] = task.name
 
-        if config["max_episode_steps"] is None:
+        if not isinstance(config["max_episode_steps"], int):
             adaptative_max_step = adaptative_max_episode_step(
                 env.world, task, time_factor=config["time_factor"]
             )
-            env.max_step = config["max_episode_steps"] = adaptative_max_step
+            env.max_step = adaptative_max_step
+            wandb.log({"adaptative_max_step": adaptative_max_step}, commit=False)
 
         env.add_task(task, can_end=True)
         env = Monitor(env)  # record stats such as returns
@@ -119,7 +121,7 @@ if __name__ == "__main__":
         env,
         f"videos/{run.id}",
         record_video_trigger=lambda step: step % 10000 == 0,
-        video_length=config["max_episode_steps"],
+        video_length=crafting_env.max_step,
     )
 
     task: TaskObtainItem = crafting_env.tasks[0]
