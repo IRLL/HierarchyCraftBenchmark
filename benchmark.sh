@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --mem-per-cpu=1.5G      # increase as needed
+#SBATCH --mem-per-cpu=1.5G
 #SBATCH --time=2:00:00
 
 module load python/3.10
