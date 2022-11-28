@@ -7,11 +7,16 @@ from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.vec_env import DummyVecEnv, VecVideoRecorder
 
 from crafting import CraftingEnv, MineCraftingEnv, RandomCraftingEnv
+from crafting.examples.simple.env import (
+    StackedCraftingEnv,
+    LightStackedCraftingEnv,
+    LighterStackedCraftingEnv,
+)
 
 from crafting.task import RewardShaping, get_task
 
 
-def choose_env(env_name: str, max_episode_steps: int, **kwargs):
+def choose_env(env_name: str, **kwargs):
     if env_name == "RandomCrafting-v1":
         env = RandomCraftingEnv(
             n_items=kwargs["n_items"],
@@ -20,18 +25,38 @@ def choose_env(env_name: str, max_episode_steps: int, **kwargs):
             n_required_tools=[0.25, 0.4, 0.2, 0.1, 0.05],
             n_inputs_per_craft=[0.1, 0.6, 0.3],
             n_zones=kwargs["n_zones"],
-            max_step=max_episode_steps,
+            max_step=kwargs["max_episode_steps"],
             seed=kwargs["env_seed"],
             use_old_gym_format=True,
         )
     elif env_name == "MineCrafting-v1":
         env = MineCraftingEnv(
-            max_step=max_episode_steps,
+            max_step=kwargs["max_episode_steps"],
             seed=kwargs["env_seed"],
             use_old_gym_format=True,
         )
+    elif env_name == "StackedCrafting-v1":
+        env = StackedCraftingEnv(
+            n_items=kwargs["n_items"],
+            reward_shaping=kwargs["reward_shaping"],
+            use_old_gym_format=True,
+        )
+    elif env_name == "LightStackedCrafting-v1":
+        env = LightStackedCraftingEnv(
+            n_items=kwargs["n_items"],
+            n_required_previous=kwargs["n_required_previous"],
+            reward_shaping=kwargs["reward_shaping"],
+            use_old_gym_format=True,
+        )
+    elif env_name == "LighterStackedCrafting-v1":
+        env = LighterStackedCraftingEnv(
+            n_items=kwargs["n_items"],
+            n_required_previous=kwargs["n_required_previous"],
+            reward_shaping=kwargs["reward_shaping"],
+            use_old_gym_format=True,
+        )
     else:
-        env = gym.make(env_name, max_step=max_episode_steps)
+        env = gym.make(env_name, max_step=kwargs["max_episode_steps"])
 
     return env
 
@@ -67,16 +92,20 @@ def build_task(
 def make_env(config: dict):
     env = choose_env(**config)
     reward_shaping = config["reward_shaping"]
-    task = build_task(
-        env,
-        reward_shaping,
-        config.get("task"),
-        config["task_complexity"],
-    )
+    task_name = config.get("task_name")
+    task_complexity = config.get("task_complexity")
+    if task_name is not None or task_complexity is not None:
+        task = build_task(
+            env,
+            reward_shaping,
+            task_name,
+            task_complexity,
+        )
+        env.add_task(task, can_end=True)
+    task = env.tasks[-1]
     print(f"{task=} | {reward_shaping=}")
     if "task" not in config:
         config["task"] = task.name
-    env.add_task(task, can_end=True)
     return env
 
 
