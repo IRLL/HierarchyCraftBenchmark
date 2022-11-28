@@ -6,7 +6,7 @@ import wandb
 from wandb.integration.sb3 import WandbCallback
 
 
-class WandbCallback(WandbCallback):
+class Sb3WandbCallback(WandbCallback):
     def __init__(
         self,
         verbose: int = 0,

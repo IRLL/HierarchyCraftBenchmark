@@ -20,8 +20,8 @@ from crafting.task import (
     get_task,
 )
 
-from callbacks import WandbCallback
-from plots import save_requirement_graph, save_option_graph
+from craftbench.wandb import WandbCallback
+from craftbench.plots import save_requirement_graph, save_option_graph
 
 if __name__ == "__main__":
 
