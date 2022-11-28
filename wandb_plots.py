@@ -10,12 +10,17 @@ from matplotlib.ticker import MultipleLocator
 
 
 def get_mean_and_uncertainty_by_groups(df: pd.DataFrame, groups: List[str]):
-    mean_df = df.groupby(groups).mean()
-    std_df = df.groupby(groups).std()
+    grouped_df = df.groupby(groups)
+    mean_df = grouped_df.mean()
+    std_df = grouped_df.std()
     std_df.fillna(0.0, inplace=True)
-    count_df = df.groupby(groups).count()
+    count_df = grouped_df.count()
     uncertainty_df = 2 * std_df / np.sqrt(count_df)
     return mean_df, uncertainty_df
+
+
+def loglog_linregress(x, y):
+    return linregress(np.log(x), np.log(y))
 
 
 def plot_linregress(
@@ -30,42 +35,18 @@ def plot_linregress(
     fail_df = df[df[y_name].isna()]
 
     mean_succ_df, uncertainty_succ_df = get_mean_and_uncertainty_by_groups(
-        success_df, groups
+        success_df[[x_name, y_name, fail_y_name] + groups], groups
     )
 
     mean_fail_df, uncertainty_fail_df = get_mean_and_uncertainty_by_groups(
-        fail_df, groups
+        fail_df[[x_name, y_name, fail_y_name] + groups], groups
     )
-
-    errorbar_config = {
-        "marker": "",
-        "markersize": 2,
-        "linestyle": "",
-        "capsize": 2,
-        "elinewidth": 1,
-    }
 
     mean_x = mean_succ_df[x_name]
     mean_y = mean_succ_df[y_name]
-    ax.errorbar(
-        mean_x,
-        mean_y,
-        yerr=uncertainty_succ_df[y_name],
-        color="b",
-        label="Success",
-        **errorbar_config,
-    )
 
     mean_x_fail = mean_fail_df[x_name]
     mean_y_fail = mean_fail_df[fail_y_name]
-    ax.errorbar(
-        mean_x_fail,
-        mean_y_fail,
-        yerr=uncertainty_fail_df[fail_y_name],
-        color="r",
-        label="Fail (step limit)",
-        **errorbar_config,
-    )
 
     min_x = df[x_name].min()
     max_x = df[x_name].max()
@@ -75,12 +56,36 @@ def plot_linregress(
 
     # Loglog regression on points where multiple runs are sampled
     multi_sampled = uncertainty_succ_df[y_name] > 0
-    x = np.log(mean_x[multi_sampled])
-    y = np.log(mean_y[multi_sampled])
-
-    reg = linregress(x, y)
+    reg = loglog_linregress(mean_x[multi_sampled], mean_y[multi_sampled])
     x_reg = np.linspace(np.log(min_x), np.log(max_x) * 1.05, 100)
     y_reg = reg.slope * x_reg + reg.intercept
+
+    errorbar_config = {
+        "marker": "",
+        "markersize": 2,
+        "linestyle": "",
+        "capsize": 2,
+        "elinewidth": 1,
+    }
+
+    ax.errorbar(
+        mean_x,
+        mean_y,
+        yerr=uncertainty_succ_df[y_name],
+        color="b",
+        label="Success",
+        **errorbar_config,
+    )
+
+    ax.errorbar(
+        mean_x_fail,
+        mean_y_fail,
+        yerr=uncertainty_fail_df[fail_y_name],
+        color="r",
+        label="Fail (step limit)",
+        **errorbar_config,
+    )
+
     ax.plot(
         np.exp(x_reg),
         np.exp(y_reg),
@@ -115,9 +120,9 @@ def plot_grid(runs_df: pd.DataFrame, x_name: str, y_name: str):
     coefs = np.zeros(axes.shape + (deg + 1,))
     for i, pi_units in enumerate(pi_units_per_layer_values):
         for j, vf_units in enumerate(vf_units_per_layer_values):
-            filtered_df = experiments_df[
-                (experiments_df["vf_units_per_layer"] == vf_units)
-                & (experiments_df["pi_units_per_layer"] == pi_units)
+            filtered_df = runs_df[
+                (runs_df["vf_units_per_layer"] == vf_units)
+                & (runs_df["pi_units_per_layer"] == pi_units)
             ]
             ax = axes[i, j]
             reg = plot_linregress(
@@ -229,6 +234,43 @@ def plot_single_linregress(experiments_df: pd.DataFrame, x_name: str, y_name: st
     plt.show()
 
 
+def plot_learning_waste(
+    df: pd.DataFrame,
+    time: str = "csuccess50_step",
+    groups: Optional[List[str]] = None,
+):
+    success_df = df[~df[time].isna()]
+    mean_succ_df, uncertainty_succ_df = get_mean_and_uncertainty_by_groups(
+        success_df[
+            ["total_complexity", "learning_complexity", "saved_complexity", time]
+            + groups
+        ],
+        groups,
+    )
+    multi_sampled = uncertainty_succ_df[time] > 0
+    ct = mean_succ_df["total_complexity"][multi_sampled]
+    mean_y = mean_succ_df[time][multi_sampled]
+    min_x = ct.min()
+    max_x = ct.max()
+    min_y = mean_y.min()
+    max_y = mean_y.max()
+
+    # Loglog regression on points where multiple runs are sampled
+
+    reg = loglog_linregress(ct, mean_y)
+    cl = mean_succ_df["learning_complexity"][multi_sampled]
+    cs = mean_succ_df["saved_complexity"][multi_sampled]
+    t = mean_succ_df[time][multi_sampled]
+    learning_waste: pd.DataFrame = (
+        np.power(t / np.exp(reg.intercept), 1 / reg.slope) - cl
+    ) / cs
+    learning_waste = learning_waste.replace([np.inf, -np.inf], 0)
+    print(learning_waste)
+    plt.plot(cs, learning_waste, linestyle="", marker="+")
+    plt.title("Learning waste wrt saved complexity")
+    plt.show()
+
+
 def plot_complexities_comparison(filtered_df: pd.DataFrame):
     x_range = np.linspace(
         np.min(filtered_df["learning_complexity"]),
@@ -313,23 +355,30 @@ def plot_reward_shaping_comparison(experiments_df: pd.DataFrame):
 
 
 if __name__ == "__main__":
-    pass
-    # experiments_df = pd.read_csv("runs_data.csv")
+    experiments_df = pd.read_csv("runs_data_64.csv")
+
+    # Filter unvalid runs
+    experiments_df = experiments_df[experiments_df["_step"] > 2000]
 
     # Replace invalid task_seed
-    # experiments_df["task_seed"].mask(
-    #     experiments_df["task_seed"] == "[0]", 0, inplace=True
-    # )
+    experiments_df["task_seed"].mask(
+        experiments_df["task_seed"] == "[0]", 0, inplace=True
+    )
 
     # Plot reward_shaping influence
     # plot_reward_shaping_comparison(experiments_df)
 
     # Plot 64, 64 correlations
-    # filtered_df = experiments_df[
-    #     (experiments_df["vf_units_per_layer"] == 64)
-    #     & (experiments_df["pi_units_per_layer"] == 64)
-    #     & (experiments_df["reward_shaping"] == 2)
-    # ]
+    filtered_df = experiments_df[
+        (experiments_df["vf_units_per_layer"] == 64)
+        & (experiments_df["pi_units_per_layer"] == 64)
+        & (experiments_df["reward_shaping"] == 2)
+    ]
+    plot_learning_waste(
+        filtered_df,
+        time="csuccess50_step",
+        groups=["env_seed", "task_seed"],
+    )
     # plot_single_linregress(filtered_df, "total_complexity", "csuccess50_step")
     # plot_single_linregress(filtered_df, "learning_complexity", "csuccess50_step")
     # plot_complexities_comparison(filtered_df)
