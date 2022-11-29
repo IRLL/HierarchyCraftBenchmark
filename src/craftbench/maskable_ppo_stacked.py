@@ -9,6 +9,7 @@ from option_graph.option import Option
 
 import wandb
 
+from crafting.env import CraftingEnv
 from crafting.task import RewardShaping, TaskObtainItem
 
 from craftbench.wandbench import WandbCallback
@@ -35,6 +36,19 @@ DEFAULT_CONFIG = {
 }
 
 
+def run_solve(env: CraftingEnv, solver: Option) -> int:
+    step = 0
+    done = False
+    observation = env.reset()
+    while not done:
+        action = solver(observation)
+        observation, _, done, _ = env.step(action)
+        step += 1
+
+    assert step < env.max_step
+    return step
+
+
 def benchmark_mskppo(
     save_req_graph: bool = False,
     save_sol_graph: bool = False,
@@ -57,7 +71,10 @@ def benchmark_mskppo(
     solving_option: Option = all_options[f"Get {task.goal_item}"]
     params_logs["solving_option"] = str(solving_option)
 
-    # TODO Adapt max_step to solving option size
+    # Adapt max_step to solving option size
+    steps_to_solve = run_solve(crafting_env, solving_option)
+    crafting_env.max_step = int(1.2 * steps_to_solve)  # Give a 20% margin error
+    params_logs["steps_to_solve"] = steps_to_solve
 
     # Save goal solving graph
     if save_sol_graph:
