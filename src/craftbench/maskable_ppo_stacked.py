@@ -37,6 +37,15 @@ DEFAULT_CONFIG = {
 
 
 def run_solve(env: CraftingEnv, solver: Option) -> int:
+    """Count how much steps are needed for the solver to finish.
+
+    Args:
+        env (CraftingEnv): The Crafting environment containing an finishing task.
+        solver (Option): The solver to test the lenght of.
+
+    Returns:
+        int: Number of steps needed for the solver to complete the task.
+    """
     step = 0
     done = False
     observation = env.reset()
