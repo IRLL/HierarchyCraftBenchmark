@@ -52,6 +52,7 @@ def benchmark_mskppo(
     task: TaskObtainItem = crafting_env.tasks[0]  # Assume only one task
     print(task.achievements_items)
     params_logs["task"] = str(task)
+    params_logs["_env_name"] = crafting_env.name
 
     if save_req_graph:
         # Get & save requirements graph
