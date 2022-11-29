@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 
 from crafting.world.world import World
 
-from option_graph.option import OptionGraph
+from option_graph.option_graph import OptionGraph
 from option_graph.graph import compute_levels
 
 
