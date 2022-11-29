@@ -81,9 +81,9 @@ def benchmark_mskppo(
     params_logs["solving_option"] = str(solving_option)
 
     # Adapt max_step to solving option size
-    steps_to_solve = run_solve(crafting_env, solving_option)
-    crafting_env.max_step = int(1.2 * steps_to_solve)  # Give a 20% margin error
-    params_logs["steps_to_solve"] = steps_to_solve
+    # steps_to_solve = run_solve(crafting_env, solving_option)
+    # crafting_env.max_step = int(4 * steps_to_solve)  # Give a 300% margin error
+    # params_logs["steps_to_solve"] = steps_to_solve
 
     # Save goal solving graph
     if save_sol_graph:
