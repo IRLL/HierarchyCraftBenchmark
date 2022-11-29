@@ -1,5 +1,4 @@
 import os
-import sys
 from typing import Tuple
 
 import matplotlib.pyplot as plt
