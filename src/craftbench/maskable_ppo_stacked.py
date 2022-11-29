@@ -47,22 +47,9 @@ def benchmark_mskppo(
 
     # Build env
     crafting_env = make_env(config)
-    video_path = f"videos/{run.id}"
-    env = record_wrap_env(crafting_env, video_path)
     task: TaskObtainItem = crafting_env.tasks[0]  # Assume only one task
-    print(task.achievements_items)
     params_logs["task"] = str(task)
     params_logs["_env_name"] = crafting_env.name
-
-    if save_req_graph:
-        # Get & save requirements graph
-        requirement_graph_path = save_requirement_graph(
-            run_dirname,
-            crafting_env.world,
-            title=str(crafting_env.world),
-            figsize=(32, 18),
-        )
-        params_logs["requirement_graph"] = wandb.Image(requirement_graph_path)
 
     # Get solving option
     all_options = crafting_env.world.get_all_options()
@@ -70,9 +57,12 @@ def benchmark_mskppo(
     solving_option: Option = all_options[f"Get {task.goal_item}"]
     params_logs["solving_option"] = str(solving_option)
 
+    # TODO Adapt max_step to solving option size
+
     # Save goal solving graph
     if save_sol_graph:
-        solving_option_graph_path = save_option_graph(solving_option, run_dirname)
+        solving_graph = solving_option.graph.unrolled_graph
+        solving_option_graph_path = save_option_graph(solving_graph, run_dirname)
         params_logs["solving_option_graph"] = wandb.Image(solving_option_graph_path)
 
     # Compute complexities
@@ -90,6 +80,20 @@ def benchmark_mskppo(
             "saved_complexity": comp_saved,
         }
     )
+
+    # Get & save requirements graph
+    if save_req_graph:
+        requirement_graph_path = save_requirement_graph(
+            run_dirname,
+            crafting_env.world,
+            title=str(crafting_env.world),
+            figsize=(32, 18),
+        )
+        params_logs["requirement_graph"] = wandb.Image(requirement_graph_path)
+
+    # Add video recording
+    video_path = f"videos/{run.id}"
+    env = record_wrap_env(crafting_env, video_path)
 
     # Build neural networks architecture from config
     pi_arch = [config["pi_units_per_layer"] for _ in range(config["pi_n_layers"])]
