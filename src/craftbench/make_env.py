@@ -1,6 +1,7 @@
 from typing import Optional, Union
 import os
 
+import numpy as np
 import gym
 
 from stable_baselines3.common.monitor import Monitor
@@ -115,7 +116,8 @@ def record_wrap_env(crafting_env: CraftingEnv, video_path: str):
     env = VecVideoRecorder(
         env,
         video_path,
-        record_video_trigger=lambda step: step % 10000 == 0,
+        record_video_trigger=lambda step: (step >= 1000)
+        and (int(np.log10(step + 1)) - int(np.log10(step))),
         video_length=crafting_env.max_step,
     )
     return env
