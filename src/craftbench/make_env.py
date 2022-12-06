@@ -38,11 +38,14 @@ def choose_env(env_name: str, **kwargs):
             use_old_gym_format=True,
         )
     elif env_name == "TowerCrafting-v1":
+        env_kwargs = {}
+        if "max_episode_steps" in kwargs:
+            env_kwargs["max_episode_steps"] = kwargs["max_episode_steps"]
         env = TowerCraftingEnv(
             height=kwargs["height"],
             width=kwargs["width"],
-            max_step=kwargs["max_episode_steps"],
             use_old_gym_format=True,
+            **env_kwargs,
         )
     elif env_name == "RecursiveCrafting-v1":
         env = RecursiveCraftingEnv(
