@@ -99,7 +99,7 @@ def benchmark_mskppo(
     print(
         f"OPTION: {str(solving_option)}:"
         f"Complexities total={lcomp + comp_saved},"
-        f" saved={comp_saved}, learn={comp_saved}"
+        f" saved={comp_saved}, learn={lcomp}"
     )
     params_logs.update(
         {
