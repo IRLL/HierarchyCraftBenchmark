@@ -8,10 +8,11 @@ from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.vec_env import DummyVecEnv, VecVideoRecorder
 
 from crafting import CraftingEnv, MineCraftingEnv, RandomCraftingEnv
-from crafting.examples.simple.env import (
-    StackedCraftingEnv,
-    LightStackedCraftingEnv,
-    LighterStackedCraftingEnv,
+from crafting.examples.simple import (
+    TowerCraftingEnv,
+    RecursiveCraftingEnv,
+    LightRecursiveCraftingEnv,
+    LighterRecursiveCraftingEnv,
 )
 
 from crafting.task import RewardShaping, get_task
@@ -36,21 +37,28 @@ def choose_env(env_name: str, **kwargs):
             seed=kwargs["env_seed"],
             use_old_gym_format=True,
         )
-    elif env_name == "StackedCrafting-v1":
-        env = StackedCraftingEnv(
+    elif env_name == "TowerCrafting-v1":
+        env = TowerCraftingEnv(
+            height=kwargs["height"],
+            width=kwargs["width"],
+            max_step=kwargs["max_episode_steps"],
+            use_old_gym_format=True,
+        )
+    elif env_name == "RecursiveCrafting-v1":
+        env = RecursiveCraftingEnv(
             n_items=kwargs["n_items"],
             reward_shaping=kwargs["reward_shaping"],
             use_old_gym_format=True,
         )
-    elif env_name == "LightStackedCrafting-v1":
-        env = LightStackedCraftingEnv(
+    elif env_name == "LightRecursiveCrafting-v1":
+        env = LightRecursiveCraftingEnv(
             n_items=kwargs["n_items"],
             n_required_previous=kwargs["n_required_previous"],
             reward_shaping=kwargs["reward_shaping"],
             use_old_gym_format=True,
         )
-    elif env_name == "LighterStackedCrafting-v1":
-        env = LighterStackedCraftingEnv(
+    elif env_name == "LighterRecursiveCrafting-v1":
+        env = LighterRecursiveCraftingEnv(
             n_items=kwargs["n_items"],
             n_required_previous=kwargs["n_required_previous"],
             reward_shaping=kwargs["reward_shaping"],
