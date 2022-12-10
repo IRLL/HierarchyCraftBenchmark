@@ -152,4 +152,4 @@ def benchmark_mskppo(
 
 
 if __name__ == "__main__":
-    benchmark_mskppo(save_req_graph=True, save_sol_graph=True)
+    benchmark_mskppo(save_req_graph=True, save_sol_graph=False)
