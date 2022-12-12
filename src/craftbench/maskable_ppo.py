@@ -5,7 +5,7 @@ from sb3_contrib.ppo_mask.ppo_mask import MaskablePPO
 
 from hebg.metrics.complexity import learning_complexity
 from hebg.metrics.complexity.histograms import nodes_histograms
-from hebg.option import Option
+from hebg.behavior import Behavior
 
 import wandb
 
@@ -72,7 +72,7 @@ def benchmark_mskppo(
     # Get solving option
     all_options = crafting_env.world.get_all_options()
     all_options_list = list(all_options.values())
-    solving_option: Option = all_options[f"Get {task.goal_item}"]
+    solving_option: Behavior = all_options[f"Get {task.goal_item}"]
     params_logs["solving_option"] = str(solving_option)
 
     # Save goal solving graph
