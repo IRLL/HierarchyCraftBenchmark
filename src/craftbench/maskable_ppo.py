@@ -5,7 +5,7 @@ from sb3_contrib.ppo_mask.ppo_mask import MaskablePPO
 
 from hebg.metrics.complexity import learning_complexity
 from hebg.metrics.complexity.histograms import nodes_histograms
-from hebg.option import Option
+from hebg.behavior import Behavior
 
 import wandb
 
@@ -69,22 +69,22 @@ def benchmark_mskppo(
         )
         params_logs["requirement_graph"] = wandb.Image(requirement_graph_path)
 
-    # Get solving option
-    all_options = crafting_env.world.get_all_options()
-    all_options_list = list(all_options.values())
-    solving_option: Option = all_options[f"Get {task.goal_item}"]
-    params_logs["solving_option"] = str(solving_option)
+    # Get solving behavior
+    all_behaviors = crafting_env.world.get_all_behaviors()
+    all_behaviors_list = list(all_behaviors.values())
+    solving_behavior: Behavior = all_behaviors[f"Get {task.goal_item}"]
+    params_logs["solving_behavior"] = str(solving_behavior)
 
     # Save goal solving graph
     if save_sol_graph:
-        solving_heb_graph_path = save_heb_graph(solving_option, run_dirname)
+        solving_heb_graph_path = save_heb_graph(solving_behavior, run_dirname)
         params_logs["solving_heb_graph"] = wandb.Image(solving_heb_graph_path)
 
     # Compute complexities
-    used_nodes_all = nodes_histograms(all_options_list)
-    lcomp, comp_saved = learning_complexity(solving_option, used_nodes_all)
+    used_nodes_all = nodes_histograms(all_behaviors_list)
+    lcomp, comp_saved = learning_complexity(solving_behavior, used_nodes_all)
     print(
-        f"OPTION: {str(solving_option)}:"
+        f"BEHAVIOR: {str(solving_behavior)}:"
         f"Complexities total={lcomp + comp_saved},"
         f" saved={comp_saved}, learn={comp_saved}"
     )
