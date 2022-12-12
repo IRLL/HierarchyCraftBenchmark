@@ -37,10 +37,10 @@ def save_requirement_graph(
 
 
 def save_heb_graph(graph: HEBGraph, name: str, dpi: float = 90) -> str:
-    """Draw & save an option graph."""
+    """Draw & save an HEBGraph."""
     compute_levels(graph)
     width = max(len(nodes) for nodes in graph.graph["nodes_by_level"].values())
     _, ax = plt.subplots(figsize=(max(8, 16 * width / 8), max(4.5, 9 * width / 8)))
-    graph.draw(ax, draw_options_hulls=True)
+    graph.draw(ax, draw_hulls=True)
 
-    return save_plot("solving_option.jpg", name, str(graph.option), dpi)
+    return save_plot("solving_behavior.jpg", name, str(graph.behavior), dpi)

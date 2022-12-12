@@ -41,7 +41,7 @@ def run_solve(env: CraftingEnv, solver: Behavior) -> int:
 
     Args:
         env (CraftingEnv): The Crafting environment containing an finishing task.
-        solver (Option): The solver to test the lenght of.
+        solver (Behavior): The solver to test the lenght of.
 
     Returns:
         int: Number of steps needed for the solver to complete the task.
@@ -74,14 +74,14 @@ def benchmark_mskppo(
     params_logs["task"] = str(task)
     params_logs["_env_name"] = crafting_env.name
 
-    # Get solving option
-    all_options = crafting_env.world.get_all_options()
-    all_options_list = list(all_options.values())
-    solving_option: Behavior = all_options[f"Get {task.goal_item}"]
-    params_logs["solving_option"] = str(solving_option)
+    # Get solving behavior
+    all_behaviors = crafting_env.world.get_all_behaviors()
+    all_behaviors_list = list(all_behaviors.values())
+    solving_behavior: Behavior = all_behaviors[f"Get {task.goal_item}"]
+    params_logs["solving_behavior"] = str(solving_behavior)
 
-    # Adapt max_step to solving option size
-    steps_to_solve = run_solve(crafting_env, solving_option)
+    # Adapt max_step to solving behavior size
+    steps_to_solve = run_solve(crafting_env, solving_behavior)
     # crafting_env.max_step = int(4 * steps_to_solve)  # Give a 300% margin error
     crafting_env.max_step = 2**crafting_env.world.n_items
     params_logs["steps_to_solve"] = steps_to_solve
@@ -89,15 +89,15 @@ def benchmark_mskppo(
 
     # Save goal solving graph
     if save_sol_graph:
-        solving_graph = solving_option.graph.unrolled_graph
+        solving_graph = solving_behavior.graph.unrolled_graph
         solving_heb_graph_path = save_heb_graph(solving_graph, run_dirname)
         params_logs["solving_heb_graph"] = wandb.Image(solving_heb_graph_path)
 
     # Compute complexities
-    used_nodes_all = nodes_histograms(all_options_list)
-    lcomp, comp_saved = learning_complexity(solving_option, used_nodes_all)
+    used_nodes_all = nodes_histograms(all_behaviors_list)
+    lcomp, comp_saved = learning_complexity(solving_behavior, used_nodes_all)
     print(
-        f"OPTION: {str(solving_option)}:"
+        f"BEHAVIOR: {str(solving_behavior)}:"
         f"Complexities total={lcomp + comp_saved},"
         f" saved={comp_saved}, learn={lcomp}"
     )
