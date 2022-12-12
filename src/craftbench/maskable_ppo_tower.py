@@ -9,6 +9,7 @@ from hebg.option import Option
 
 import wandb
 
+from crafting.env import CraftingEnv
 from crafting.task import RewardShaping, TaskObtainItem
 
 from craftbench.wandbench import WandbCallback
@@ -16,7 +17,7 @@ from craftbench.plots import save_requirement_graph, save_heb_graph
 
 from craftbench.make_env import make_env, record_wrap_env
 
-PROJECT = "crafting-benchmark"
+PROJECT = "stackedcrafting-benchmark"
 
 DEFAULT_CONFIG = {
     "agent": "MaskablePPO",
@@ -28,18 +29,33 @@ DEFAULT_CONFIG = {
     "vf_units_per_layer": 64,
     "total_timesteps": 1e6,
     "max_n_consecutive_successes": 200,
-    "env_name": "RandomCrafting-v1",
-    "env_seed": 1,
-    "task_seed": None,
-    "task_complexity": 243,
-    "reward_shaping": RewardShaping.ALL_USEFUL.value,
-    "max_episode_steps": 200,
-    "time_factor": 2.0,
-    "n_items": 20,
-    "n_tools": 0,
-    "n_findables": 1,
-    "n_zones": 1,
+    "env_name": "TowerCrafting-v1",
+    "reward_shaping": RewardShaping.NONE.value,
+    "height": 2,
+    "width": 4,
 }
+
+
+def run_solve(env: CraftingEnv, solver: Option) -> int:
+    """Count how much steps are needed for the solver to finish.
+
+    Args:
+        env (CraftingEnv): The Crafting environment containing an finishing task.
+        solver (Option): The solver to test the lenght of.
+
+    Returns:
+        int: Number of steps needed for the solver to complete the task.
+    """
+    step = 0
+    done = False
+    observation = env.reset()
+    while not done:
+        action = solver(observation)
+        observation, _, done, _ = env.step(action)
+        step += 1
+
+    assert step < env.max_step
+    return step
 
 
 def benchmark_mskppo(
@@ -54,20 +70,9 @@ def benchmark_mskppo(
 
     # Build env
     crafting_env = make_env(config)
-    video_path = f"videos/{run.id}"
-    env = record_wrap_env(crafting_env, video_path)
     task: TaskObtainItem = crafting_env.tasks[0]  # Assume only one task
     params_logs["task"] = str(task)
-
-    if save_req_graph:
-        # Get & save requirements graph
-        requirement_graph_path = save_requirement_graph(
-            run_dirname,
-            crafting_env.world,
-            title=str(crafting_env.world),
-            figsize=(32, 18),
-        )
-        params_logs["requirement_graph"] = wandb.Image(requirement_graph_path)
+    params_logs["_env_name"] = crafting_env.name
 
     # Get solving option
     all_options = crafting_env.world.get_all_options()
@@ -75,9 +80,17 @@ def benchmark_mskppo(
     solving_option: Option = all_options[f"Get {task.goal_item}"]
     params_logs["solving_option"] = str(solving_option)
 
+    # Adapt max_step to solving option size
+    steps_to_solve = run_solve(crafting_env, solving_option)
+    # crafting_env.max_step = int(4 * steps_to_solve)  # Give a 300% margin error
+    crafting_env.max_step = 2**crafting_env.world.n_items
+    params_logs["steps_to_solve"] = steps_to_solve
+    params_logs["_max_step"] = crafting_env.max_step
+
     # Save goal solving graph
     if save_sol_graph:
-        solving_heb_graph_path = save_heb_graph(solving_option, run_dirname)
+        solving_graph = solving_option.graph.unrolled_graph
+        solving_heb_graph_path = save_heb_graph(solving_graph, run_dirname)
         params_logs["solving_heb_graph"] = wandb.Image(solving_heb_graph_path)
 
     # Compute complexities
@@ -86,7 +99,7 @@ def benchmark_mskppo(
     print(
         f"OPTION: {str(solving_option)}:"
         f"Complexities total={lcomp + comp_saved},"
-        f" saved={comp_saved}, learn={comp_saved}"
+        f" saved={comp_saved}, learn={lcomp}"
     )
     params_logs.update(
         {
@@ -95,6 +108,20 @@ def benchmark_mskppo(
             "saved_complexity": comp_saved,
         }
     )
+
+    # Get & save requirements graph
+    if save_req_graph:
+        requirement_graph_path = save_requirement_graph(
+            run_dirname,
+            crafting_env.world,
+            title=str(crafting_env.world),
+            figsize=(32, 18),
+        )
+        params_logs["requirement_graph"] = wandb.Image(requirement_graph_path)
+
+    # Add video recording
+    video_path = f"videos/{run.id}"
+    env = record_wrap_env(crafting_env, video_path)
 
     # Build neural networks architecture from config
     pi_arch = [config["pi_units_per_layer"] for _ in range(config["pi_n_layers"])]
@@ -125,4 +152,4 @@ def benchmark_mskppo(
 
 
 if __name__ == "__main__":
-    benchmark_mskppo()
+    benchmark_mskppo(save_req_graph=True, save_sol_graph=False)
