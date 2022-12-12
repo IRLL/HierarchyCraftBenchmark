@@ -3,16 +3,16 @@ import time
 
 from sb3_contrib.ppo_mask.ppo_mask import MaskablePPO
 
-from option_graph.metrics.complexity import learning_complexity
-from option_graph.metrics.complexity.histograms import nodes_histograms
-from option_graph.option import Option
+from hebg.metrics.complexity import learning_complexity
+from hebg.metrics.complexity.histograms import nodes_histograms
+from hebg.option import Option
 
 import wandb
 
 from crafting.task import RewardShaping, TaskObtainItem
 
 from craftbench.wandbench import WandbCallback
-from craftbench.plots import save_requirement_graph, save_option_graph
+from craftbench.plots import save_requirement_graph, save_heb_graph
 
 from craftbench.make_env import make_env, record_wrap_env
 
@@ -77,8 +77,8 @@ def benchmark_mskppo(
 
     # Save goal solving graph
     if save_sol_graph:
-        solving_option_graph_path = save_option_graph(solving_option, run_dirname)
-        params_logs["solving_option_graph"] = wandb.Image(solving_option_graph_path)
+        solving_heb_graph_path = save_heb_graph(solving_option, run_dirname)
+        params_logs["solving_heb_graph"] = wandb.Image(solving_heb_graph_path)
 
     # Compute complexities
     used_nodes_all = nodes_histograms(all_options_list)

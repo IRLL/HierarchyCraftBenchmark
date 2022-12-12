@@ -5,8 +5,8 @@ import matplotlib.pyplot as plt
 
 from crafting.world.world import World
 
-from option_graph.option_graph import OptionGraph
-from option_graph.graph import compute_levels
+from hebg.heb_graph import HEBGraph
+from hebg.graph import compute_levels
 
 
 def save_plot(filename: str, dirname: str, title: str, dpi: float):
@@ -36,7 +36,7 @@ def save_requirement_graph(
     return save_plot("requirement_graph.jpg", name, title, dpi)
 
 
-def save_option_graph(graph: OptionGraph, name: str, dpi: float = 90) -> str:
+def save_heb_graph(graph: HEBGraph, name: str, dpi: float = 90) -> str:
     """Draw & save an option graph."""
     compute_levels(graph)
     width = max(len(nodes) for nodes in graph.graph["nodes_by_level"].values())
