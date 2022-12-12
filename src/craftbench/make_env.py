@@ -1,0 +1,92 @@
+from typing import Optional, Union
+import os
+
+import gym
+
+from stable_baselines3.common.monitor import Monitor
+from stable_baselines3.common.vec_env import DummyVecEnv, VecVideoRecorder
+
+from crafting import CraftingEnv, MineCraftingEnv, RandomCraftingEnv
+
+from crafting.task import RewardShaping, get_task
+
+
+def choose_env(env_name: str, max_episode_steps: int, **kwargs):
+    if env_name == "RandomCrafting-v1":
+        env = RandomCraftingEnv(
+            n_items=kwargs["n_items"],
+            n_tools=kwargs["n_tools"],
+            n_findables=kwargs["n_findables"],
+            n_required_tools=[0.25, 0.4, 0.2, 0.1, 0.05],
+            n_inputs_per_craft=[0.1, 0.6, 0.3],
+            n_zones=kwargs["n_zones"],
+            max_step=max_episode_steps,
+            seed=kwargs["env_seed"],
+            use_old_gym_format=True,
+        )
+    elif env_name == "MineCrafting-v1":
+        env = MineCraftingEnv(
+            max_step=max_episode_steps,
+            seed=kwargs["env_seed"],
+            use_old_gym_format=True,
+        )
+    else:
+        env = gym.make(env_name, max_step=max_episode_steps)
+
+    return env
+
+
+def build_task(
+    env: CraftingEnv,
+    reward_shaping: RewardShaping,
+    task_name: Optional[str] = None,
+    task_complexity: Optional[Union[int, str]] = None,
+    task_seed: Optional[int] = None,
+):
+    reward_shaping = RewardShaping(reward_shaping)
+    cache_path = os.path.join("cache", f"{env.name}_{env.original_seed}")
+    if isinstance(task_complexity, str):
+        if task_complexity.isdigit():
+            task_complexity = int(task_complexity)
+        else:
+            task_complexity = None
+
+    if task_complexity is not None:
+        task_name = None
+
+    return get_task(
+        world=env.world,
+        task_name=task_name,
+        task_complexity=task_complexity,
+        cache_path=cache_path,
+        reward_shaping=reward_shaping,
+        seed=task_seed,
+    )
+
+
+def make_env(config: dict):
+    env = choose_env(**config)
+    reward_shaping = config["reward_shaping"]
+    task = build_task(
+        env,
+        reward_shaping,
+        config.get("task"),
+        config["task_complexity"],
+    )
+    print(f"{task=} | {reward_shaping=}")
+    if "task" not in config:
+        config["task"] = task.name
+    env.add_task(task, can_end=True)
+    return env
+
+
+def record_wrap_env(crafting_env: CraftingEnv, video_path: str):
+    crafting_env = Monitor(crafting_env)  # record stats such as returns
+    env = DummyVecEnv([lambda: crafting_env])
+    env = VecVideoRecorder(
+        env,
+        video_path,
+        record_video_trigger=lambda step: step % 10000 == 0,
+        video_length=crafting_env.max_step,
+    )
+    return env

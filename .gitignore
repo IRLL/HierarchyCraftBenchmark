@@ -133,7 +133,7 @@ dmypy.json
 todo
 
 # Logs
-wandb
+/wandb
 videos
 runs
 logs
