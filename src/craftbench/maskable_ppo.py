@@ -4,7 +4,7 @@ import time
 from sb3_contrib.ppo_mask.ppo_mask import MaskablePPO
 
 from hebg.metrics.complexity import learning_complexity
-from hebg.metrics.complexity.histograms import nodes_histograms
+from hebg.metrics.histograms import nodes_histograms
 from hebg.behavior import Behavior
 
 import wandb
