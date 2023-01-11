@@ -4,7 +4,7 @@ import time
 from sb3_contrib.ppo_mask.ppo_mask import MaskablePPO
 
 from hebg.metrics.complexity import learning_complexity
-from hebg.metrics.histograms import nodes_histograms
+from hebg.metrics.histograms import behaviors_histograms
 from hebg.behavior import Behavior
 
 import wandb
@@ -92,7 +92,7 @@ def benchmark_mskppo(
         params_logs["solving_heb_graph"] = wandb.Image(solving_heb_graph_path)
 
     # Compute complexities
-    used_nodes_all = nodes_histograms(all_behaviors_list)
+    used_nodes_all = behaviors_histograms(all_behaviors_list)
     lcomp, comp_saved = learning_complexity(solving_behavior, used_nodes_all)
     print(
         f"BEHAVIOR: {str(solving_behavior)}:"
