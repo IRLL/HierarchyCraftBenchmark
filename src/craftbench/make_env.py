@@ -29,13 +29,10 @@ def choose_env(env_name: str, **kwargs):
             n_zones=kwargs["n_zones"],
             max_step=kwargs["max_episode_steps"],
             seed=kwargs["env_seed"],
-            use_old_gym_format=True,
         )
     elif env_name == "MineCrafting-v1":
         env = MineCraftingEnv(
-            max_step=kwargs["max_episode_steps"],
-            seed=kwargs["env_seed"],
-            use_old_gym_format=True,
+            max_step=kwargs["max_episode_steps"], seed=kwargs["env_seed"]
         )
     elif env_name == "TowerCrafting-v1":
         env_kwargs = {}
@@ -43,29 +40,23 @@ def choose_env(env_name: str, **kwargs):
             env_kwargs["max_episode_steps"] = kwargs["max_episode_steps"]
         env = TowerCraftingEnv(
             height=kwargs["height"],
-            width=kwargs["width"],
-            use_old_gym_format=True,
-            **env_kwargs,
+            width=kwargs["width"] ** env_kwargs,
         )
     elif env_name == "RecursiveCrafting-v1":
         env = RecursiveCraftingEnv(
-            n_items=kwargs["n_items"],
-            reward_shaping=kwargs["reward_shaping"],
-            use_old_gym_format=True,
+            n_items=kwargs["n_items"], reward_shaping=kwargs["reward_shaping"]
         )
     elif env_name == "LightRecursiveCrafting-v1":
         env = LightRecursiveCraftingEnv(
             n_items=kwargs["n_items"],
             n_required_previous=kwargs["n_required_previous"],
             reward_shaping=kwargs["reward_shaping"],
-            use_old_gym_format=True,
         )
     elif env_name == "LighterRecursiveCrafting-v1":
         env = LighterRecursiveCraftingEnv(
             n_items=kwargs["n_items"],
             n_required_previous=kwargs["n_required_previous"],
             reward_shaping=kwargs["reward_shaping"],
-            use_old_gym_format=True,
         )
     else:
         env = gym.make(env_name, max_step=kwargs["max_episode_steps"])
