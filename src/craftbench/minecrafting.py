@@ -1,15 +1,11 @@
-import time
-
 import gym
-from stable_baselines3 import PPO, DQN, A2C, TD3
-from sb3_contrib import MaskablePPO, RecurrentPPO
-
 import wandb
 
 from crafting.examples import MineCraftingEnv
 
 from craftbench.wandbench import WandbCallback
 from craftbench.make_env import record_wrap_env
+from craftbench.make_agent import load_agent
 
 PROJECT = "minecrafting-v1-benchmark"
 
@@ -48,15 +44,14 @@ def benchmark_mskppo():
     # Build neural networks architecture from config
     pi_arch = [config["pi_units_per_layer"] for _ in range(config["pi_n_layers"])]
     vf_arch = [config["vf_units_per_layer"] for _ in range(config["vf_n_layers"])]
-    net_arch = [dict(pi=pi_arch, vf=vf_arch)]
 
     # Build agent
-    agent = MaskablePPO(
-        config["policy_type"],
-        env,
-        policy_kwargs={"net_arch": net_arch},
+    agent = load_agent(
+        agent_name=config["agent"],
+        env=env,
+        policy_type=config["policy_type"],
+        net_arch={"pi": pi_arch, "vf": vf_arch},
         seed=config["agent_seed"],
-        verbose=1,
     )
 
     wandb.log(params_logs)
