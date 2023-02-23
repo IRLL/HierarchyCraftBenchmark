@@ -15,20 +15,14 @@ class Sb3WandbCallback(WandbCallback):
     ):
         super().__init__(**kwargs)
         self.infos_log_freq = infos_log_freq
-        self._step_since_last_infos_log = 0
         self.n_successes = 0
         self.n_consecutive_successes = 0
         self.max_n_consecutive_successes = max_n_consecutive_successes
         self._purpose_is_done = False
 
     def _should_log_infos(self):
-        if (
-            self.infos_log_freq
-            and self.infos_log_freq <= self._step_since_last_infos_log
-        ):
-            self._step_since_last_infos_log = 1
+        if self.infos_log_freq and self.model.num_timesteps % self.infos_log_freq == 0:
             return True
-        self._step_since_last_infos_log += 1
         return False
 
     def _on_step(self):
