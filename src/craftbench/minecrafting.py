@@ -20,7 +20,7 @@ DEFAULT_CONFIG = {
     "total_timesteps": 1e6,
     "max_n_consecutive_successes": 200,
     "env_name": "MineCrafting-Platinium-v1",
-    "max_step": 200,
+    "max_step": 1000,
     "record_videos": False,
 }
 
@@ -59,6 +59,7 @@ def benchmark_mskppo():
         total_timesteps=config["total_timesteps"],
         callback=WandbCallback(
             verbose=2,
+            infos_log_freq=500,
             max_n_consecutive_successes=config["max_n_consecutive_successes"],
         ),
         progress_bar=True,

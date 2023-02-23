@@ -9,17 +9,27 @@ from wandb.integration.sb3 import WandbCallback
 class Sb3WandbCallback(WandbCallback):
     def __init__(
         self,
-        verbose: int = 0,
-        model_save_path: str = None,
-        model_save_freq: int = 0,
-        gradient_save_freq: int = 0,
         max_n_consecutive_successes: Optional[int] = None,
+        infos_log_freq: int = 0,
+        **kwargs,
     ):
-        super().__init__(verbose, model_save_path, model_save_freq, gradient_save_freq)
+        super().__init__(**kwargs)
+        self.infos_log_freq = infos_log_freq
+        self._step_since_last_infos_log = 0
         self.n_successes = 0
         self.n_consecutive_successes = 0
         self.max_n_consecutive_successes = max_n_consecutive_successes
         self._purpose_is_done = False
+
+    def _should_log_infos(self):
+        if (
+            self.infos_log_freq
+            and self.infos_log_freq <= self._step_since_last_infos_log
+        ):
+            self._step_since_last_infos_log = 1
+            return True
+        self._step_since_last_infos_log += 1
+        return False
 
     def _on_step(self):
         # Checking for both 'done' and 'dones' keywords because:
@@ -33,7 +43,9 @@ class Sb3WandbCallback(WandbCallback):
         env_done = np.any(done)
         infos: dict = self.locals.get("infos")[0]
         purpose_is_done = infos.get("Purpose is done", False)
-
+        metrics = {}
+        if self._should_log_infos():
+            metrics.update(infos)
         if purpose_is_done:
             self._purpose_is_done = True
         if env_done:
@@ -43,13 +55,13 @@ class Sb3WandbCallback(WandbCallback):
             else:
                 self.n_consecutive_successes = 0
             self._purpose_is_done = False
-            metrics = {info: value for info, value in infos.items() if "rate" in info}
             metrics.update(
                 {
                     "n_successes": self.n_successes,
                     "n_consecutive_successes": self.n_consecutive_successes,
                 },
             )
+        if metrics:
             wandb.log(metrics, step=self.model.num_timesteps)
         if (
             self.max_n_consecutive_successes is not None
