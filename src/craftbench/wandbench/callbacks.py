@@ -19,7 +19,7 @@ class Sb3WandbCallback(WandbCallback):
         self.n_successes = 0
         self.n_consecutive_successes = 0
         self.max_n_consecutive_successes = max_n_consecutive_successes
-        self._tasks_done = False
+        self._purpose_is_done = False
 
     def _on_step(self):
         # Checking for both 'done' and 'dones' keywords because:
@@ -31,23 +31,26 @@ class Sb3WandbCallback(WandbCallback):
             else self.locals.get("dones")
         )
         env_done = np.any(done)
-        tasks_done = self.locals.get("infos")[0].get("tasks_done")
-        if tasks_done:
-            self._tasks_done = True
+        infos: dict = self.locals.get("infos")[0]
+        purpose_is_done = infos.get("Purpose is done", False)
+
+        if purpose_is_done:
+            self._purpose_is_done = True
         if env_done:
-            if self._tasks_done:
+            if self._purpose_is_done:
                 self.n_successes += 1
                 self.n_consecutive_successes += 1
             else:
                 self.n_consecutive_successes = 0
-            self._tasks_done = False
-            wandb.log(
+            self._purpose_is_done = False
+            metrics = {info: value for info, value in infos.items() if "rate" in info}
+            metrics.update(
                 {
                     "n_successes": self.n_successes,
                     "n_consecutive_successes": self.n_consecutive_successes,
                 },
-                step=self.model.num_timesteps,
             )
+            wandb.log(metrics, step=self.model.num_timesteps)
         if (
             self.max_n_consecutive_successes is not None
             and self.n_consecutive_successes >= self.max_n_consecutive_successes
