@@ -31,9 +31,8 @@ def benchmark_mskppo():
     params_logs = {}
 
     # Build env
-    crafting_env: MineCraftingEnv = gym.make(
-        config["env_name"], max_step=config["max_step"]
-    )
+    max_step = config["max_step"]
+    crafting_env: MineCraftingEnv = gym.make(config["env_name"], max_step=max_step)
     if config.get("record_videos", False):
         video_path = f"videos/{run.id}"
         env = record_wrap_env(env, video_path)
@@ -59,7 +58,7 @@ def benchmark_mskppo():
         total_timesteps=config["total_timesteps"],
         callback=WandbCallback(
             verbose=2,
-            infos_log_freq=500,
+            infos_log_freq=max_step if max_step is not None else 500,
             max_n_consecutive_successes=config["max_n_consecutive_successes"],
         ),
         progress_bar=True,
