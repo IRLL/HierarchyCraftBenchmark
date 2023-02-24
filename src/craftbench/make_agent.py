@@ -18,6 +18,7 @@ def load_agent(
     env: Env,
     policy_type: str,
     net_arch: Dict[str, List[int]],
+    device: str,
     seed: int,
 ) -> BaseAlgorithm:
     """Load a sb3 agent from it's name."""
@@ -29,5 +30,6 @@ def load_agent(
         env=env,
         policy_kwargs={"net_arch": net_arch},
         seed=seed,
+        device=device,
         verbose=1,
     )

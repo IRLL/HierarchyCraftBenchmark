@@ -20,8 +20,9 @@ DEFAULT_CONFIG = {
     "total_timesteps": 1e6,
     "max_n_consecutive_successes": 200,
     "env_name": "MineCrafting-Platinium-v1",
-    "max_step": 1000,
+    "max_step": 0,
     "record_videos": False,
+    "device": "cuda",
 }
 
 
@@ -31,7 +32,7 @@ def benchmark_mskppo():
     params_logs = {}
 
     # Build env
-    max_step = config["max_step"]
+    max_step = config["max_step"] if config["max_step"] > 0 else None
     crafting_env: MineCraftingEnv = gym.make(config["env_name"], max_step=max_step)
     if config.get("record_videos", False):
         video_path = f"videos/{run.id}"
@@ -50,6 +51,7 @@ def benchmark_mskppo():
         env=env,
         policy_type=config["policy_type"],
         net_arch={"pi": pi_arch, "vf": vf_arch},
+        device=config["device"],
         seed=config["agent_seed"],
     )
 
