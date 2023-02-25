@@ -17,6 +17,7 @@ DEFAULT_CONFIG = {
     "pi_units_per_layer": 64,
     "vf_n_layers": 3,
     "vf_units_per_layer": 64,
+    "invalid_reward": -10,
     "total_timesteps": 1e6,
     "max_n_consecutive_successes": 200,
     "env_name": "MineCrafting-Platinium-v1",
@@ -33,7 +34,11 @@ def benchmark_mskppo():
 
     # Build env
     max_step = config["max_step"] if config["max_step"] > 0 else None
-    crafting_env: MineCraftingEnv = gym.make(config["env_name"], max_step=max_step)
+    crafting_env: MineCraftingEnv = gym.make(
+        config["env_name"],
+        max_step=max_step,
+        invalid_reward=config["invalid_reward"],
+    )
     if config.get("record_videos", False):
         video_path = f"videos/{run.id}"
         env = record_wrap_env(env, video_path)
