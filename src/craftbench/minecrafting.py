@@ -47,15 +47,19 @@ def benchmark_mskppo():
     params_logs["purpose"] = str(crafting_env.purpose)
 
     # Build neural networks architecture from config
-    pi_arch = [config["pi_units_per_layer"] for _ in range(config["pi_n_layers"])]
-    vf_arch = [config["vf_units_per_layer"] for _ in range(config["vf_n_layers"])]
+    net_arch = _build_network_architecture(
+        config["pi_units_per_layer"],
+        config["pi_n_layers"],
+        config["vf_units_per_layer"],
+        config["vf_n_layers"],
+    )
 
     # Build agent
     agent = load_agent(
         agent_name=config["agent"],
         env=env,
         policy_type=config["policy_type"],
-        net_arch={"pi": pi_arch, "vf": vf_arch},
+        net_arch=net_arch,
         device=config["device"],
         seed=config["agent_seed"],
     )
@@ -72,6 +76,17 @@ def benchmark_mskppo():
     )
 
     run.finish()
+
+
+def _build_network_architecture(
+    pi_units_per_layer: int,
+    pi_n_layers: int,
+    vf_units_per_layer: int,
+    vf_n_layers: int,
+):
+    pi_arch = [pi_units_per_layer for _ in range(pi_n_layers)]
+    vf_arch = [vf_units_per_layer for _ in range(vf_n_layers)]
+    return {"pi": pi_arch, "vf": vf_arch}
 
 
 if __name__ == "__main__":
