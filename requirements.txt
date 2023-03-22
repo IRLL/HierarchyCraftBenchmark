@@ -1,6 +1,7 @@
-irll-crafting >= 1.0.6
+hcraft>=1.1.0
 wandb>=0.12.4
 stable-baselines3>=1.3.0
 sb3-contrib>=1.3.0
 tqdm
 rich
+rliable

@@ -1,13 +1,13 @@
 import gym
 import wandb
 
-from crafting.examples import MineCraftingEnv
+from hcraft.examples import MineHcraftEnv
 
 from craftbench.wandbench import WandbCallback
 from craftbench.make_env import record_wrap_env
 from craftbench.make_agent import load_agent
 
-PROJECT = "minecrafting-v1-benchmark"
+PROJECT = "minehcraft-v1-benchmark"
 
 DEFAULT_CONFIG = {
     "agent": "MaskablePPO",
@@ -20,7 +20,7 @@ DEFAULT_CONFIG = {
     "invalid_reward": -10,
     "total_timesteps": 1e6,
     "max_n_consecutive_successes": 200,
-    "env_name": "MineCrafting-Platinium-v1",
+    "env_name": "MineHierarchyCraft-Platinium-v1",
     "max_step": 0,
     "record_videos": False,
     "device": "cuda",
@@ -34,7 +34,7 @@ def benchmark_mskppo():
 
     # Build env
     max_step = config["max_step"] if config["max_step"] > 0 else None
-    crafting_env: MineCraftingEnv = gym.make(
+    hcraft_env: MineHcraftEnv = gym.make(
         config["env_name"],
         max_step=max_step,
         invalid_reward=config["invalid_reward"],
@@ -43,8 +43,8 @@ def benchmark_mskppo():
         video_path = f"videos/{run.id}"
         env = record_wrap_env(env, video_path)
     else:
-        env = crafting_env
-    params_logs["purpose"] = str(crafting_env.purpose)
+        env = hcraft_env
+    params_logs["purpose"] = str(hcraft_env.purpose)
 
     # Build neural networks architecture from config
     net_arch = _build_network_architecture(

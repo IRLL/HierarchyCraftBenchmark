@@ -1,10 +1,10 @@
-# Crafting Environment Benchmark
+# HierarchyCraft Environment Benchmark
 
-Benchmarking of classic flat reinforcment learning agent (FRL) and hierarchical reinforcement learning (HRL) agents on the [Crafting environment](https://github.com/IRLL/Crafting).
+Benchmarking of classic flat reinforcment learning agent (FRL) and hierarchical reinforcement learning (HRL) agents on the [HierarchyCraft environment](https://github.com/IRLL/HierarchyCraft).
 
 # Research objective
 
-This work aims at evaluating the number of interaction steps and learning steps needed to succeed at hierarchical tasks provided by the Crafting environement (performance) in order to evaluate the following hypotheses:
+This work aims at evaluating the number of interaction steps and learning steps needed to succeed at hierarchical tasks provided by the HierarchyCraft environement (performance) in order to evaluate the following hypotheses:
 
 1.  HRL agents performs that FRL on some hierarchical tasks.
 2.  Agents performance on a task is correlated to the either the learning or total complexity of given hierarchical behavior explanations (HEB) of the task as defined in the [HEBGraphs](https://github.com/IRLL/HEB_graphs) framework.
@@ -16,7 +16,7 @@ This work aims at evaluating the number of interaction steps and learning steps 
 ## Install from GitHub using pip
 
 ```bash
-pip install git+https://github.com/MathisFederico/CraftingEnvBenchmark.git
+pip install git+https://github.com/MathisFederico/HierarchyCraftBenchmark.git
 ```
 
 ## Run the benchmark

@@ -31,7 +31,7 @@ def add_to_dict_of_lists(dictionary: Dict[Any, list], new_dict: Dict[Any, list])
 
 if __name__ == "__main__":
     api = wandb.Api(timeout=60)
-    entity, project = "mathisfederico", "crafting-benchmark"
+    entity, project = "mathisfederico", "hcraft-benchmark"
     csv_path = "runs_data.csv"
 
     runs = api.runs(f"{entity}/{project}")

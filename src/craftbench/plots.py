@@ -3,7 +3,7 @@ from typing import Tuple
 
 import matplotlib.pyplot as plt
 
-from crafting.world.world import World
+from hcraft.world.world import World
 
 from hebg.heb_graph import HEBGraph
 from hebg.graph import compute_levels
