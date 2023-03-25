@@ -20,7 +20,7 @@ DEFAULT_CONFIG = {
     "invalid_reward": -10,
     "total_timesteps": 1e6,
     "max_n_consecutive_successes": 200,
-    "env_name": "MineHierarchyCraft-Platinium-v1",
+    "env_name": "MineHCraft-v1",
     "max_step": 0,
     "record_videos": False,
     "device": "cuda",

@@ -1,4 +1,4 @@
 black
-pylint
+ruff
 pytest
 pytest-check

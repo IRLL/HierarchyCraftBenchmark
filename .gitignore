@@ -148,3 +148,6 @@ models
 
 # Cache
 cache
+
+# Data
+experiments
