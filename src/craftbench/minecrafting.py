@@ -41,7 +41,7 @@ def benchmark_mskppo():
     )
     if config.get("record_videos", False):
         video_path = f"videos/{run.id}"
-        env = record_wrap_env(env, video_path)
+        env = record_wrap_env(hcraft_env, video_path)
     else:
         env = hcraft_env
     params_logs["purpose"] = str(hcraft_env.purpose)
